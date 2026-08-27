@@ -233,6 +233,7 @@
         <select id="c-account">
           <option value="법인통장">법인통장</option>
           <option value="법인카드">법인카드</option>
+          <option value="대표이사 개인지출(정산대상)">대표이사 개인지출(정산대상)</option>
         </select>
       </div>
     </div>
@@ -357,19 +358,27 @@ function receiptLinkHtml(e){
   return `<a href="${e.receiptUrl}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(e.receiptName||'첨부파일')}">📎 보기</a>`;
 }
 function statusBadgeHtml(e){
+  const parts = [];
   if(e.proof === '세금계산서'){
     const approved = !!e.approved;
-    return `<button class="status-toggle ${approved ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-approved="${approved}">${approved ? '승인완료' : '미승인'}</button>`;
+    parts.push(`<button class="status-toggle ${approved ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-field="approved" data-value="${approved}">${approved ? '승인완료' : '미승인'}</button>`);
   }
-  return e.receiptUrl
-    ? `<span class="status-badge status-ok">첨부됨</span>`
-    : `<span class="status-badge status-none">증빙없음</span>`;
+  if(e.account === '대표이사 개인지출(정산대상)'){
+    const settled = !!e.settled;
+    parts.push(`<button class="status-toggle ${settled ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-field="settled" data-value="${settled}">${settled ? '정산완료' : '미정산'}</button>`);
+  }
+  if(parts.length === 0){
+    parts.push(e.receiptUrl
+      ? `<span class="status-badge status-ok">첨부됨</span>`
+      : `<span class="status-badge status-none">증빙없음</span>`);
+  }
+  return parts.join(' ');
 }
-async function toggleApproved(id, current){
+async function toggleStatusField(id, field, current){
   const uid = auth.currentUser?.uid;
   if(!uid) return;
   try{
-    await updateDoc(doc(db, 'users', uid, 'expenses', id), { approved: !current });
+    await updateDoc(doc(db, 'users', uid, 'expenses', id), { [field]: !current });
   }catch(e){
     showToast('상태 변경 중 오류가 발생했습니다');
   }
@@ -433,7 +442,7 @@ function render(){
     `).join('');
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
-  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleApproved(btn.getAttribute('data-id'), btn.getAttribute('data-approved') === 'true')));
+  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleStatusField(btn.getAttribute('data-id'), btn.getAttribute('data-field'), btn.getAttribute('data-value') === 'true')));
   renderSummary();
   renderCorp();
 }
@@ -508,7 +517,7 @@ function renderCorp(){
     `).join('');
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
-  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleApproved(btn.getAttribute('data-id'), btn.getAttribute('data-approved') === 'true')));
+  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleStatusField(btn.getAttribute('data-id'), btn.getAttribute('data-field'), btn.getAttribute('data-value') === 'true')));
   renderSummaryCorp();
 }
 function renderSummaryCorp(){
@@ -518,9 +527,11 @@ function renderSummaryCorp(){
   const now = new Date();
   const thisMonth = now.toISOString().slice(0,7);
   const thisMonthTotal = expenses.filter(e => isCorpExpense(e) && fmtMonth(e.date) === thisMonth).reduce((s,e) => s + Number(e.amount||0), 0);
+  const unsettled = expenses.filter(e => isCorpExpense(e) && e.account === '대표이사 개인지출(정산대상)' && !e.settled).reduce((s,e) => s + Number(e.amount||0), 0);
   const cards = [
     {label:'현재 필터 합계', val: fmtWon(total)},
     {label:'이번 달 법인경비', val: fmtWon(thisMonthTotal)},
+    {label:'대표이사 미정산 금액', val: fmtWon(unsettled)},
     {label:'기록 건수', val: count + '건'},
   ];
   document.getElementById('corpSummaryCards').innerHTML = cards.map(c => `<div class="card"><div class="label">${c.label}</div><div class="val">${c.val}</div></div>`).join('');
