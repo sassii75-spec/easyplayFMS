@@ -401,6 +401,9 @@ function daysInMonth(yearMonth){
   const [y, m] = yearMonth.split('-').map(Number);
   return new Date(y, m, 0).getDate();
 }
+function workMonthOf(startD){
+  return startD ? startD.slice(0,7) : '';
+}
 
 function calcSalaryPreview(){
   const ym = document.getElementById('s-yearmonth').value;
@@ -422,7 +425,7 @@ function calcSalaryPreview(){
     return null;
   }
 
-  const total = daysInMonth(ym);
+  const total = daysInMonth(workMonthOf(startD));
   const s = new Date(startD), e = new Date(endD);
   const workDays = Math.round((e - s) / 86400000) + 1;
 
