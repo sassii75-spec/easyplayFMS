@@ -376,7 +376,7 @@ function salaryCollection(uid){
 }
 
 function subscribeSalaries(uid){
-  const q = query(salaryCollection(uid), orderBy('yearMonth', 'desc'));
+  const q = query(salaryCollection(uid), orderBy('ym', 'desc'));
   salaryUnsub = onSnapshot(q, (snap) => {
     salaries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderSalaryTable();
@@ -460,7 +460,7 @@ function calcSalaryPreview(){
 function renderSalaryTable(){
   const tbody = document.getElementById('salaryRows');
   const emptyMsg = document.getElementById('salaryEmptyMsg');
-  const sorted = salaries.slice().sort((a,b) => a.yearMonth < b.yearMonth ? 1 : -1);
+  const sorted = salaries.slice().sort((a,b) => a.ym < b.ym ? 1 : -1);
   if(sorted.length === 0){
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
@@ -469,7 +469,7 @@ function renderSalaryTable(){
   emptyMsg.style.display = 'none';
   tbody.innerHTML = sorted.map(s => `
     <tr>
-      <td data-label="지급월">${s.yearMonth}</td>
+      <td data-label="지급월">${s.ym}</td>
       <td data-label="근무기간">${s.startD} ~ ${s.endD}</td>
       <td data-label="근무일수">${s.workDays}/${s.total}일</td>
       <td data-label="과세급여">${fmtWon(s.grossTaxable)}</td>
