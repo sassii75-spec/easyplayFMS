@@ -46,6 +46,15 @@
   .tag-none{background:var(--danger-soft);color:#712b13;}
   .del{background:none;border:none;color:var(--ink-soft);font-size:15px;padding:2px 6px;}
   .del:hover{color:var(--danger);}
+  .receipt-link{color:#0c447c;text-decoration:none;font-size:12px;white-space:nowrap;}
+  .receipt-link:hover{text-decoration:underline;}
+  .status-badge{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .status-badge.status-none{background:#eee;color:#777;}
+  .status-badge.status-ok{background:var(--accent-soft);color:#27500a;}
+  .status-toggle{border:none;border-radius:20px;padding:3px 10px;font-size:10.5px;cursor:pointer;white-space:nowrap;}
+  .status-toggle.status-pending{background:#faece7;color:#8a4a1f;}
+  .status-toggle.status-ok{background:var(--accent-soft);color:#27500a;}
+  .status-toggle:hover{opacity:0.8;}
   .empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:30px 0;}
   .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
   .filter-row select{width:auto;min-width:110px;}
@@ -167,6 +176,9 @@
     <div class="grid-form3">
       <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고 (목적 등)</label><input type="text" id="f-memo" list="memoList" placeholder="예: 3분기 자문 관련 논의, 법인 건 아님" autocomplete="off"><datalist id="memoList"></datalist></div>
     </div>
+    <div class="grid-form3">
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·증빙 파일 (PDF, 이미지)</label><input type="file" id="f-receipt" accept=".pdf,image/*"></div>
+    </div>
     <div class="err" id="formErr"></div>
     <button class="primary" id="addBtn" style="margin-top:6px;">기록 추가</button>
   </div>
@@ -185,7 +197,7 @@
     </div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>날짜</th><th>구분</th><th>카테고리</th><th>적요</th><th>거래처/참석자</th><th>증빙</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
+        <thead><tr><th>날짜</th><th>구분</th><th>카테고리</th><th>적요</th><th>거래처/참석자</th><th>증빙</th><th>파일</th><th>상태</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
       <div class="empty" id="emptyMsg" style="display:none;">아직 기록된 지출이 없습니다. 위에서 새 지출을 추가해보세요.</div>
@@ -228,6 +240,9 @@
       <div class="field-wrap"><label>거래처</label><input type="text" id="c-partner" list="corpPartnerList" placeholder="예: (주)코스콤" autocomplete="off"><datalist id="corpPartnerList"></datalist></div>
       <div class="field-wrap"><label>비고</label><input type="text" id="c-memo" list="corpMemoList" placeholder="예: 전자세금계산서 발급 인증서, 부가세 매입세액공제 대상" autocomplete="off"><datalist id="corpMemoList"></datalist></div>
     </div>
+    <div class="grid-form3">
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·세금계산서 파일 (PDF, 이미지)</label><input type="file" id="c-receipt" accept=".pdf,image/*"></div>
+    </div>
     <div class="err" id="corpFormErr"></div>
     <button class="primary" id="corpAddBtn" style="margin-top:6px;">기록 추가</button>
   </div>
@@ -241,7 +256,7 @@
     </div>
     <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>날짜</th><th>카테고리</th><th>적요</th><th>거래처</th><th>증빙</th><th>결제계좌</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
+        <thead><tr><th>날짜</th><th>카테고리</th><th>적요</th><th>거래처</th><th>증빙</th><th>파일</th><th>상태</th><th>결제계좌</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
         <tbody id="corpRows"></tbody>
       </table>
       <div class="empty" id="corpEmptyMsg" style="display:none;">아직 기록된 법인경비가 없습니다.</div>
@@ -297,7 +312,7 @@ import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy
+  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getStorage, ref, uploadBytes, getDownloadURL, deleteObject
@@ -337,6 +352,28 @@ async function uploadReceipt(uid, file, scope){
 function fmtWon(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
 function fmtMonth(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function receiptLinkHtml(e){
+  if(!e.receiptUrl) return '<span style="color:var(--ink-soft);">-</span>';
+  return `<a href="${e.receiptUrl}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(e.receiptName||'첨부파일')}">📎 보기</a>`;
+}
+function statusBadgeHtml(e){
+  if(e.proof === '세금계산서'){
+    const approved = !!e.approved;
+    return `<button class="status-toggle ${approved ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-approved="${approved}">${approved ? '승인완료' : '미승인'}</button>`;
+  }
+  return e.receiptUrl
+    ? `<span class="status-badge status-ok">첨부됨</span>`
+    : `<span class="status-badge status-none">증빙없음</span>`;
+}
+async function toggleApproved(id, current){
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await updateDoc(doc(db, 'users', uid, 'expenses', id), { approved: !current });
+  }catch(e){
+    showToast('상태 변경 중 오류가 발생했습니다');
+  }
+}
 function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
 
 function typeTagClass(t){
@@ -387,13 +424,16 @@ function render(){
         <td data-label="적요">${escapeHtml(e.desc)}</td>
         <td data-label="거래처/참석자">${escapeHtml(e.partner || '')}</td>
         <td data-label="증빙">${e.proof}</td>
+        <td data-label="파일">${receiptLinkHtml(e)}</td>
+        <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="비고">${escapeHtml(e.memo || '')}</td>
         <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
         <td><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
     `).join('');
   }
-  document.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
+  tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
+  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleApproved(btn.getAttribute('data-id'), btn.getAttribute('data-approved') === 'true')));
   renderSummary();
   renderCorp();
 }
@@ -458,6 +498,8 @@ function renderCorp(){
         <td data-label="적요">${escapeHtml(e.desc)}</td>
         <td data-label="거래처">${escapeHtml(e.partner || '')}</td>
         <td data-label="증빙">${e.proof}</td>
+        <td data-label="파일">${receiptLinkHtml(e)}</td>
+        <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="결제계좌">${escapeHtml(e.account || '')}</td>
         <td data-label="비고">${escapeHtml(e.memo || '')}</td>
         <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
@@ -466,6 +508,7 @@ function renderCorp(){
     `).join('');
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
+  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleApproved(btn.getAttribute('data-id'), btn.getAttribute('data-approved') === 'true')));
   renderSummaryCorp();
 }
 function renderSummaryCorp(){
@@ -506,12 +549,26 @@ async function addCorpEntry(){
   if(!entry) return;
   const uid = auth.currentUser?.uid;
   if(!uid) return;
+  const fileInput = document.getElementById('c-receipt');
+  const file = fileInput.files[0];
+  const btn = document.getElementById('corpAddBtn');
+  const originalLabel = btn.textContent;
   try{
+    if(file){
+      btn.disabled = true;
+      btn.textContent = '파일 업로드 중...';
+      const receipt = await uploadReceipt(uid, file, 'corp');
+      Object.assign(entry, receipt);
+    }
     await addDoc(userCollection(uid), entry);
     ['c-desc','c-amount','c-partner','c-memo'].forEach(id => document.getElementById(id).value = '');
+    fileInput.value = '';
     showToast('법인경비 기록이 추가되었습니다');
   }catch(e){
     showToast('저장 중 오류가 발생했습니다');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 document.getElementById('corpAddBtn').addEventListener('click', addCorpEntry);
@@ -536,7 +593,11 @@ async function deleteRow(id){
   const uid = auth.currentUser?.uid;
   if(!uid) return;
   try{
+    const item = expenses.find(e => e.id === id);
     await deleteDoc(doc(db, 'users', uid, 'expenses', id));
+    if(item && item.receiptPath){
+      deleteObject(ref(storage, item.receiptPath)).catch(() => {});
+    }
     showToast('삭제되었습니다');
   }catch(e){
     showToast('삭제 중 오류가 발생했습니다');
@@ -722,13 +783,27 @@ async function addEntry(){
   }
   const uid = auth.currentUser?.uid;
   if(!uid) return;
+  const fileInput = document.getElementById('f-receipt');
+  const file = fileInput.files[0];
+  const btn = document.getElementById('addBtn');
+  const originalLabel = btn.textContent;
   try{
+    if(file){
+      btn.disabled = true;
+      btn.textContent = '파일 업로드 중...';
+      const receipt = await uploadReceipt(uid, file, 'advisor');
+      Object.assign(entry, receipt);
+    }
     await addDoc(userCollection(uid), entry);
     ['f-desc','f-amount','f-partner','f-memo'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-vehicle').value = '';
+    fileInput.value = '';
     showToast('기록이 추가되었습니다');
   }catch(e){
     showToast('저장 중 오류가 발생했습니다');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 
