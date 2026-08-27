@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>고문업무 지출관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1f2420; --ink-soft:#5b6158; --line:#dcd8cc; --bg:#faf8f2; --panel:#ffffff;
+    --accent-soft:#eaf3de; --danger:#993c1d; --danger-soft:#faece7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px;}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:22px;border-bottom:2px solid var(--ink);padding-bottom:14px;}
+  .top h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-0.3px;}
+  .top .sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .top .actions{display:flex;gap:8px;}
+  button{font-family:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--panel);padding:9px 14px;font-size:13px;color:var(--ink);transition:background .15s;}
+  button:hover{background:#f1efe6;}
+  button.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  button.primary:hover{background:#333831;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .card .label{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+  .card .val{font-size:20px;font-weight:700;}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:20px;}
+  .panel h2{font-size:14px;font-weight:700;margin:0 0 14px;}
+  .grid-form{display:grid;grid-template-columns:120px 1fr 130px;gap:10px;margin-bottom:10px;}
+  .grid-form2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+  .grid-form3{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;}
+  input,select{width:100%;font-family:inherit;font-size:13.5px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);}
+  input:focus,select:focus{outline:none;border-color:var(--ink-soft);}
+  .err{color:var(--danger);font-size:12px;margin-top:6px;display:none;}
+  .field-wrap{margin-bottom:2px;}
+  table{width:100%;border-collapse:collapse;font-size:12.8px;}
+  thead th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--ink);white-space:nowrap;}
+  tbody td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:hover{background:#f7f5ee;}
+  .amt{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+  .tag-advisor{background:var(--accent-soft);color:#27500a;}
+  .tag-corp{background:#e6f1fb;color:#0c447c;}
+  .tag-none{background:var(--danger-soft);color:#712b13;}
+  .del{background:none;border:none;color:var(--ink-soft);font-size:15px;padding:2px 6px;}
+  .del:hover{color:var(--danger);}
+  .empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:30px 0;}
+  .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .filter-row select{width:auto;min-width:110px;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .note{font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:20px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;}
+  .fab-add{display:none;}
+  #loginScreen{max-width:340px;margin:80px auto;text-align:center;}
+  #loginScreen h1{font-size:20px;margin-bottom:6px;}
+  #loginScreen p{font-size:12.5px;color:var(--ink-soft);margin-bottom:20px;}
+  #loginScreen input{margin-bottom:10px;}
+  #loginScreen .err{display:block;min-height:16px;}
+  #app{display:none;}
+
+  @media (max-width: 640px){
+    .wrap{padding:16px 12px 90px;}
+    .top{flex-direction:column;align-items:stretch;gap:10px;}
+    .top .actions{width:100%;}
+    .top .actions button{width:100%;padding:11px;}
+    .top h1{font-size:19px;}
+    .cards{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .card{padding:11px 12px;}
+    .card .val{font-size:17px;}
+    .panel{padding:14px 14px;border-radius:12px;}
+    .grid-form,.grid-form2,.grid-form3{grid-template-columns:1fr;gap:10px;}
+    input,select{font-size:16px;padding:11px 10px;}
+    .toolbar{flex-direction:column;align-items:stretch;}
+    .filter-row{width:100%;}
+    .filter-row select{flex:1;}
+    table thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:10px 12px;background:#fff;}
+    tbody td{border:none;padding:4px 0;display:flex;justify-content:space-between;gap:10px;font-size:13px;}
+    tbody td:before{content:attr(data-label);color:var(--ink-soft);font-size:11px;flex-shrink:0;padding-top:1px;}
+    tbody td.amt{font-weight:700;font-size:14.5px;}
+    tbody td:last-child{justify-content:flex-end;}
+    tbody td:last-child:before{content:'';}
+    .fab-add{display:flex;position:fixed;bottom:18px;right:18px;left:18px;z-index:15;justify-content:center;}
+    .fab-add button{width:100%;max-width:420px;padding:14px;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1>고문업무 지출관리</h1>
+  <p>등록된 계정으로 로그인하세요.</p>
+  <input type="email" id="loginEmail" placeholder="이메일">
+  <input type="password" id="loginPw" placeholder="비밀번호">
+  <div class="err" id="loginErr"></div>
+  <button class="primary" id="loginBtn" style="width:100%;padding:11px;">로그인</button>
+</div>
+
+<div id="app">
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>고문업무 지출관리</h1>
+      <div class="sub">개인 사업소득(고문료) 관련 지출 기록 · Firestore에 저장 · 엑셀 내보내기 가능</div>
+    </div>
+    <div class="actions">
+      <button id="exportBtn">엑셀로 내보내기</button>
+      <button id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="cards" id="summaryCards"></div>
+
+  <div class="panel">
+    <h2>새 지출 기록</h2>
+    <div class="grid-form">
+      <div class="field-wrap"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field-wrap"><label>적요 (지출 내용)</label><input type="text" id="f-desc" placeholder="예: OO사 김부장 미팅 저녁식사"></div>
+      <div class="field-wrap"><label>금액 (원)</label><input type="number" id="f-amount" placeholder="0" min="0" step="1"></div>
+    </div>
+    <div class="grid-form2">
+      <div class="field-wrap"><label>구분</label>
+        <select id="f-type">
+          <option value="고문경비">고문경비</option>
+          <option value="법인경비(참고)">법인경비(참고)</option>
+          <option value="불인정(개인)">불인정(개인)</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>카테고리</label>
+        <select id="f-category">
+          <option>사무실 임대료</option><option>교통비</option><option>주유비</option><option>접대비</option>
+          <option>소모품비</option><option>통신비</option><option>도서·교육비</option><option>기타</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>증빙종류</label>
+        <select id="f-proof">
+          <option>카드매출전표</option><option>현금영수증(지출증빙용)</option><option>세금계산서</option><option>계산서</option><option>기타</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-form3">
+      <div class="field-wrap"><label>거래처 / 참석자</label><input type="text" id="f-partner" list="partnerList" placeholder="예: OO사 김부장 외 1인" autocomplete="off"><datalist id="partnerList"></datalist></div>
+      <div class="field-wrap"><label>비고 (목적 등)</label><input type="text" id="f-memo" list="memoList" placeholder="예: 3분기 자문 관련 논의, 법인 건 아님" autocomplete="off"><datalist id="memoList"></datalist></div>
+    </div>
+    <div class="err" id="formErr"></div>
+    <button class="primary" id="addBtn" style="margin-top:6px;">기록 추가</button>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0;">지출 내역</h2>
+      <div class="filter-row" style="margin:0;">
+        <select id="filterMonth"></select>
+        <select id="filterType">
+          <option value="">전체 구분</option>
+          <option value="고문경비">고문경비</option>
+          <option value="법인경비(참고)">법인경비(참고)</option>
+          <option value="불인정(개인)">불인정(개인)</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>날짜</th><th>구분</th><th>카테고리</th><th>적요</th><th>거래처/참석자</th><th>증빙</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg" style="display:none;">아직 기록된 지출이 없습니다. 위에서 새 지출을 추가해보세요.</div>
+    </div>
+    <div class="note">3만원 초과 지출은 적격증빙(카드매출전표 / 지출증빙용 현금영수증 / 세금계산서)이 있어야 경비로 인정됩니다. 접대비는 거래처·참석자·목적을 함께 기록해두면 나중에 소명이 쉽습니다.</div>
+  </div>
+</div>
+</div>
+
+<div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// ===== 여기를 Firebase 콘솔에서 발급받은 값으로 채워주세요 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDXD8PlqEGRGPPp6Lts7a26fXXAaPlq2Dg",
+  authDomain: "easyplayfms.firebaseapp.com",
+  projectId: "easyplayfms",
+  storageBucket: "easyplayfms.firebasestorage.app",
+  messagingSenderId: "558327904829",
+  appId: "1:558327904829:web:276a1afcbbf68edad5c854"
+};
+// ============================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let expenses = [];
+let unsub = null;
+
+function fmtWon(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+function fmtMonth(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+
+function typeTagClass(t){
+  if(t === '고문경비') return 'tag-advisor';
+  if(t === '법인경비(참고)') return 'tag-corp';
+  return 'tag-none';
+}
+
+function populateMonthFilter(){
+  const sel = document.getElementById('filterMonth');
+  const months = Array.from(new Set(expenses.map(e => fmtMonth(e.date)))).filter(Boolean).sort().reverse();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">전체 월</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+  if(months.includes(current)) sel.value = current;
+}
+function populateHistoryLists(){
+  const partners = Array.from(new Set(expenses.map(e => (e.partner||'').trim()).filter(Boolean)));
+  const memos = Array.from(new Set(expenses.map(e => (e.memo||'').trim()).filter(Boolean)));
+  document.getElementById('partnerList').innerHTML = partners.map(p => `<option value="${escapeHtml(p)}">`).join('');
+  document.getElementById('memoList').innerHTML = memos.map(m => `<option value="${escapeHtml(m)}">`).join('');
+}
+function getFiltered(){
+  const month = document.getElementById('filterMonth').value;
+  const type = document.getElementById('filterType').value;
+  return expenses.filter(e => {
+    if(month && fmtMonth(e.date) !== month) return false;
+    if(type && e.type !== type) return false;
+    return true;
+  });
+}
+function render(){
+  populateMonthFilter();
+  populateHistoryLists();
+  const list = getFiltered().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
+  const tbody = document.getElementById('rows');
+  const emptyMsg = document.getElementById('emptyMsg');
+  if(list.length === 0){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = list.map(e => `
+      <tr>
+        <td data-label="날짜">${e.date || ''}</td>
+        <td data-label="구분"><span class="tag ${typeTagClass(e.type)}">${e.type}</span></td>
+        <td data-label="카테고리">${e.category}</td>
+        <td data-label="적요">${escapeHtml(e.desc)}</td>
+        <td data-label="거래처/참석자">${escapeHtml(e.partner || '')}</td>
+        <td data-label="증빙">${e.proof}</td>
+        <td data-label="비고">${escapeHtml(e.memo || '')}</td>
+        <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
+        <td><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
+      </tr>
+    `).join('');
+  }
+  document.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
+  renderSummary();
+}
+function renderSummary(){
+  const filtered = getFiltered();
+  const total = filtered.reduce((s,e) => s + Number(e.amount||0), 0);
+  const advisorTotal = filtered.filter(e => e.type === '고문경비').reduce((s,e) => s + Number(e.amount||0), 0);
+  const count = filtered.length;
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0,7);
+  const thisMonthTotal = expenses.filter(e => fmtMonth(e.date) === thisMonth && e.type === '고문경비').reduce((s,e) => s + Number(e.amount||0), 0);
+  const cards = [
+    {label:'현재 필터 합계', val: fmtWon(total)},
+    {label:'고문경비 합계 (필터 기준)', val: fmtWon(advisorTotal)},
+    {label:'이번 달 고문경비', val: fmtWon(thisMonthTotal)},
+    {label:'기록 건수', val: count + '건'},
+  ];
+  document.getElementById('summaryCards').innerHTML = cards.map(c => `<div class="card"><div class="label">${c.label}</div><div class="val">${c.val}</div></div>`).join('');
+}
+
+function userCollection(uid){
+  return collection(db, 'users', uid, 'expenses');
+}
+
+function subscribeExpenses(uid){
+  const q = query(userCollection(uid), orderBy('date', 'desc'));
+  unsub = onSnapshot(q, (snap) => {
+    expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  }, (err) => {
+    showToast('데이터를 불러오지 못했습니다');
+    console.error(err);
+  });
+}
+
+async function deleteRow(id){
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await deleteDoc(doc(db, 'users', uid, 'expenses', id));
+    showToast('삭제되었습니다');
+  }catch(e){
+    showToast('삭제 중 오류가 발생했습니다');
+  }
+}
+
+function validateForm(){
+  const date = document.getElementById('f-date').value;
+  const desc = document.getElementById('f-desc').value.trim();
+  const amount = document.getElementById('f-amount').value;
+  const errEl = document.getElementById('formErr');
+  if(!date){ errEl.textContent = '날짜를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!desc){ errEl.textContent = '적요(지출 내용)를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!amount || Number(amount) <= 0){ errEl.textContent = '금액을 올바르게 입력하세요.'; errEl.style.display='block'; return null; }
+  errEl.style.display = 'none';
+  return {
+    date, desc, amount: Number(amount),
+    type: document.getElementById('f-type').value,
+    category: document.getElementById('f-category').value,
+    proof: document.getElementById('f-proof').value,
+    partner: document.getElementById('f-partner').value.trim(),
+    memo: document.getElementById('f-memo').value.trim(),
+  };
+}
+
+async function addEntry(){
+  const entry = validateForm();
+  if(!entry) return;
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await addDoc(userCollection(uid), entry);
+    ['f-desc','f-amount','f-partner','f-memo'].forEach(id => document.getElementById(id).value = '');
+    showToast('기록이 추가되었습니다');
+  }catch(e){
+    showToast('저장 중 오류가 발생했습니다');
+  }
+}
+
+document.getElementById('addBtn').addEventListener('click', addEntry);
+document.getElementById('fabAddBtn').addEventListener('click', () => {
+  document.getElementById('f-desc').scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(() => document.getElementById('f-desc').focus(), 300);
+});
+document.getElementById('filterMonth').addEventListener('change', render);
+document.getElementById('filterType').addEventListener('change', render);
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if(expenses.length === 0){ showToast('내보낼 기록이 없습니다'); return; }
+  const rows = expenses.slice().sort((a,b)=> a.date < b.date ? -1 : 1).map((e,i) => ({
+    '번호': i+1, '날짜': e.date, '구분': e.type, '카테고리': e.category, '적요': e.desc,
+    '거래처/참석자': e.partner, '증빙종류': e.proof, '비고': e.memo, '금액': e.amount,
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:6},{wch:12},{wch:14},{wch:14},{wch:28},{wch:20},{wch:20},{wch:26},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '지출내역');
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `고문업무_지출내역_${today}.xlsx`);
+  showToast('엑셀 파일을 내려받았습니다');
+});
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  if(unsub) unsub();
+  await signOut(auth);
+});
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+
+// ---- 로그인 ----
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  if(!email || !pw){ errEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+  try{
+    await signInWithEmailAndPassword(auth, email, pw);
+  }catch(e){
+    errEl.textContent = '로그인에 실패했습니다. 이메일/비밀번호를 확인하세요.';
+  }
+});
+
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    subscribeExpenses(user.uid);
+  } else {
+    document.getElementById('loginScreen').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+    if(unsub) unsub();
+    expenses = [];
+  }
+});
+</script>
+</body>
+</html>
