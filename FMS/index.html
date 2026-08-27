@@ -120,15 +120,16 @@
   </div>
 
   <div class="tabbar">
-    <button class="tab-btn active" data-tab="expense">지출관리</button>
+    <button class="tab-btn active" data-tab="advisor">고문경비</button>
+    <button class="tab-btn" data-tab="corp">법인경비</button>
     <button class="tab-btn" data-tab="salary">급여관리</button>
   </div>
 
-  <div id="tab-expense">
+  <div id="tab-advisor">
   <div class="cards" id="summaryCards"></div>
 
   <div class="panel">
-    <h2>새 지출 기록</h2>
+    <h2>새 지출 기록 (고문업무)</h2>
     <div class="grid-form">
       <div class="field-wrap"><label>날짜</label><input type="date" id="f-date"></div>
       <div class="field-wrap"><label>적요 (지출 내용)</label><input type="text" id="f-desc" placeholder="예: OO사 김부장 미팅 저녁식사"></div>
@@ -138,7 +139,6 @@
       <div class="field-wrap"><label>구분</label>
         <select id="f-type">
           <option value="고문경비">고문경비</option>
-          <option value="법인경비(참고)">법인경비(참고)</option>
           <option value="불인정(개인)">불인정(개인)</option>
         </select>
       </div>
@@ -173,13 +173,12 @@
 
   <div class="panel">
     <div class="toolbar">
-      <h2 style="margin:0;">지출 내역</h2>
+      <h2 style="margin:0;">고문경비 내역</h2>
       <div class="filter-row" style="margin:0;">
         <select id="filterMonth"></select>
         <select id="filterType">
           <option value="">전체 구분</option>
           <option value="고문경비">고문경비</option>
-          <option value="법인경비(참고)">법인경비(참고)</option>
           <option value="불인정(개인)">불인정(개인)</option>
         </select>
       </div>
@@ -193,6 +192,61 @@
     </div>
     <div class="note">3만원 초과 지출은 적격증빙(카드매출전표 / 지출증빙용 현금영수증 / 세금계산서)이 있어야 경비로 인정됩니다. 접대비는 거래처·참석자·목적을 함께 기록해두면 나중에 소명이 쉽습니다.<br><br>
     <b>차량·주유비 관련:</b> 자가운전보조금(비과세 20만원)을 받는 <u>법인 업무용 차량</u>의 주유비는 이미 급여로 정산된 것이므로 여기 기록하지 않습니다. <u>고문업무 전용으로 쓰시는 별도 차량</u>의 주유비는 "주유비" 카테고리로 정상 기록하시면 됩니다 (비고란에 어느 차량인지 적어두면 나중에 구분이 쉬워요).</div>
+  </div>
+  </div>
+
+  <div id="tab-corp" style="display:none;">
+  <div class="cards" id="corpSummaryCards"></div>
+
+  <div class="panel">
+    <h2>새 지출 기록 (법인 · 이지플레이랩)</h2>
+    <div class="grid-form">
+      <div class="field-wrap"><label>날짜</label><input type="date" id="c-date"></div>
+      <div class="field-wrap"><label>적요 (지출 내용)</label><input type="text" id="c-desc" placeholder="예: 코스콤 범용 공인인증서 발급"></div>
+      <div class="field-wrap"><label>금액 (원, 부가세 포함)</label><input type="number" id="c-amount" placeholder="0" min="0" step="1"></div>
+    </div>
+    <div class="grid-form2">
+      <div class="field-wrap"><label>카테고리</label>
+        <select id="c-category">
+          <option>지급수수료</option><option>통신비</option><option>임차료</option><option>소모품비</option>
+          <option>여비교통비</option><option>접대비</option><option>광고선전비</option><option>인건비</option><option>기타</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>증빙종류</label>
+        <select id="c-proof">
+          <option>세금계산서</option><option>계산서</option><option>카드매출전표</option><option>현금영수증(지출증빙용)</option><option>기타</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>결제 계좌</label>
+        <select id="c-account">
+          <option value="법인통장">법인통장</option>
+          <option value="법인카드">법인카드</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-form3">
+      <div class="field-wrap"><label>거래처</label><input type="text" id="c-partner" list="corpPartnerList" placeholder="예: (주)코스콤" autocomplete="off"><datalist id="corpPartnerList"></datalist></div>
+      <div class="field-wrap"><label>비고</label><input type="text" id="c-memo" list="corpMemoList" placeholder="예: 전자세금계산서 발급 인증서, 부가세 매입세액공제 대상" autocomplete="off"><datalist id="corpMemoList"></datalist></div>
+    </div>
+    <div class="err" id="corpFormErr"></div>
+    <button class="primary" id="corpAddBtn" style="margin-top:6px;">기록 추가</button>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0;">법인경비 내역</h2>
+      <div class="filter-row" style="margin:0;">
+        <select id="corpFilterMonth"></select>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>날짜</th><th>카테고리</th><th>적요</th><th>거래처</th><th>증빙</th><th>결제계좌</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
+        <tbody id="corpRows"></tbody>
+      </table>
+      <div class="empty" id="corpEmptyMsg" style="display:none;">아직 기록된 법인경비가 없습니다.</div>
+    </div>
+    <div class="note">법인 통장·카드에서 직접 지출된 사업 관련 비용만 기록하세요. 대표이사 개인 자격의 고문업무 지출은 "고문경비" 탭에 별도로 기록합니다. 세금계산서는 홈택스/발급 사이트에서 "수신승인" 처리까지 마쳐야 부가세 매입세액공제에 정상 반영됩니다.</div>
   </div>
   </div>
 
@@ -245,6 +299,9 @@ import {
 import {
   getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
 // ===== 여기를 Firebase 콘솔에서 발급받은 값으로 채워주세요 =====
 const firebaseConfig = {
@@ -260,11 +317,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 let expenses = [];
 let unsub = null;
 let salaries = [];
 let salaryUnsub = null;
+
+async function uploadReceipt(uid, file, scope){
+  if(!file) return null;
+  const safeName = file.name.replace(/[^\w.\-가-힣]/g, '_');
+  const path = `users/${uid}/receipts/${scope}/${Date.now()}_${safeName}`;
+  const sref = ref(storage, path);
+  await uploadBytes(sref, file);
+  const url = await getDownloadURL(sref);
+  return { receiptUrl: url, receiptName: file.name, receiptPath: path };
+}
 
 function fmtWon(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
 function fmtMonth(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
@@ -294,6 +362,7 @@ function getFiltered(){
   const month = document.getElementById('filterMonth').value;
   const type = document.getElementById('filterType').value;
   return expenses.filter(e => {
+    if(e.type === '법인경비' || e.type === '법인경비(참고)') return false;
     if(month && fmtMonth(e.date) !== month) return false;
     if(type && e.type !== type) return false;
     return true;
@@ -326,6 +395,7 @@ function render(){
   }
   document.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
   renderSummary();
+  renderCorp();
 }
 function renderSummary(){
   const filtered = getFiltered();
@@ -343,6 +413,109 @@ function renderSummary(){
   ];
   document.getElementById('summaryCards').innerHTML = cards.map(c => `<div class="card"><div class="label">${c.label}</div><div class="val">${c.val}</div></div>`).join('');
 }
+
+// ===== 법인경비 (corp) =====
+function isCorpExpense(e){
+  return e.type === '법인경비' || e.type === '법인경비(참고)';
+}
+function populateMonthFilterCorp(){
+  const sel = document.getElementById('corpFilterMonth');
+  const months = Array.from(new Set(expenses.filter(isCorpExpense).map(e => fmtMonth(e.date)))).filter(Boolean).sort().reverse();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">전체 월</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+  if(months.includes(current)) sel.value = current;
+}
+function populateHistoryListsCorp(){
+  const corp = expenses.filter(isCorpExpense);
+  const partners = Array.from(new Set(corp.map(e => (e.partner||'').trim()).filter(Boolean)));
+  const memos = Array.from(new Set(corp.map(e => (e.memo||'').trim()).filter(Boolean)));
+  document.getElementById('corpPartnerList').innerHTML = partners.map(p => `<option value="${escapeHtml(p)}">`).join('');
+  document.getElementById('corpMemoList').innerHTML = memos.map(m => `<option value="${escapeHtml(m)}">`).join('');
+}
+function getFilteredCorp(){
+  const month = document.getElementById('corpFilterMonth').value;
+  return expenses.filter(e => {
+    if(!isCorpExpense(e)) return false;
+    if(month && fmtMonth(e.date) !== month) return false;
+    return true;
+  });
+}
+function renderCorp(){
+  populateMonthFilterCorp();
+  populateHistoryListsCorp();
+  const list = getFilteredCorp().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
+  const tbody = document.getElementById('corpRows');
+  const emptyMsg = document.getElementById('corpEmptyMsg');
+  if(list.length === 0){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = list.map(e => `
+      <tr>
+        <td data-label="날짜">${e.date || ''}</td>
+        <td data-label="카테고리">${e.category}</td>
+        <td data-label="적요">${escapeHtml(e.desc)}</td>
+        <td data-label="거래처">${escapeHtml(e.partner || '')}</td>
+        <td data-label="증빙">${e.proof}</td>
+        <td data-label="결제계좌">${escapeHtml(e.account || '')}</td>
+        <td data-label="비고">${escapeHtml(e.memo || '')}</td>
+        <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
+        <td><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
+      </tr>
+    `).join('');
+  }
+  tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
+  renderSummaryCorp();
+}
+function renderSummaryCorp(){
+  const filtered = getFilteredCorp();
+  const total = filtered.reduce((s,e) => s + Number(e.amount||0), 0);
+  const count = filtered.length;
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0,7);
+  const thisMonthTotal = expenses.filter(e => isCorpExpense(e) && fmtMonth(e.date) === thisMonth).reduce((s,e) => s + Number(e.amount||0), 0);
+  const cards = [
+    {label:'현재 필터 합계', val: fmtWon(total)},
+    {label:'이번 달 법인경비', val: fmtWon(thisMonthTotal)},
+    {label:'기록 건수', val: count + '건'},
+  ];
+  document.getElementById('corpSummaryCards').innerHTML = cards.map(c => `<div class="card"><div class="label">${c.label}</div><div class="val">${c.val}</div></div>`).join('');
+}
+function validateCorpForm(){
+  const date = document.getElementById('c-date').value;
+  const desc = document.getElementById('c-desc').value.trim();
+  const amount = document.getElementById('c-amount').value;
+  const errEl = document.getElementById('corpFormErr');
+  if(!date){ errEl.textContent = '날짜를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!desc){ errEl.textContent = '적요(지출 내용)를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!amount || Number(amount) <= 0){ errEl.textContent = '금액을 올바르게 입력하세요.'; errEl.style.display='block'; return null; }
+  errEl.style.display = 'none';
+  return {
+    date, desc, amount: Number(amount),
+    type: '법인경비',
+    category: document.getElementById('c-category').value,
+    proof: document.getElementById('c-proof').value,
+    account: document.getElementById('c-account').value,
+    partner: document.getElementById('c-partner').value.trim(),
+    memo: document.getElementById('c-memo').value.trim(),
+  };
+}
+async function addCorpEntry(){
+  const entry = validateCorpForm();
+  if(!entry) return;
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await addDoc(userCollection(uid), entry);
+    ['c-desc','c-amount','c-partner','c-memo'].forEach(id => document.getElementById(id).value = '');
+    showToast('법인경비 기록이 추가되었습니다');
+  }catch(e){
+    showToast('저장 중 오류가 발생했습니다');
+  }
+}
+document.getElementById('corpAddBtn').addEventListener('click', addCorpEntry);
+document.getElementById('corpFilterMonth').addEventListener('change', renderCorp);
 
 function userCollection(uid){
   return collection(db, 'users', uid, 'expenses');
@@ -510,7 +683,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const target = btn.getAttribute('data-tab');
-    document.getElementById('tab-expense').style.display = target === 'expense' ? '' : 'none';
+    document.getElementById('tab-advisor').style.display = target === 'advisor' ? '' : 'none';
+    document.getElementById('tab-corp').style.display = target === 'corp' ? '' : 'none';
     document.getElementById('tab-salary').style.display = target === 'salary' ? '' : 'none';
   });
 });
@@ -589,6 +763,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   await signOut(auth);
 });
 document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('c-date').value = new Date().toISOString().slice(0,10);
 document.getElementById('s-yearmonth').value = '2026-09';
 document.getElementById('s-startdate').value = '2026-08-21';
 document.getElementById('s-enddate').value = '2026-08-31';
