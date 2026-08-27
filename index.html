@@ -2,402 +2,625 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EasyPlay Lab | 소규모 사업자를 위한 IT 전환 파트너</title>
-<meta name="description" content="EasyPlay Lab은 소규모 사업자의 IT 전환을 돕는 파트너 브랜드입니다. 컨설팅부터 맞춤 툴 개발까지, 쉽고 즐겁게 함께합니다.">
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#14B8A6">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>고문업무 지출관리</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --mint:#14B8A6;
-    --mint-dark:#0B6E62;
-    --mint-tint:#E8F8F5;
-    --purple:#7C6FF0;
-    --purple-tint:#F1EFFE;
-    --ink:#1A2027;
-    --gray:#6B7480;
-    --bg:#FAFAF8;
-    --line:#E7E9E4;
-    --radius:14px;
+    --ink:#1f2420; --ink-soft:#5b6158; --line:#dcd8cc; --bg:#faf8f2; --panel:#ffffff;
+    --accent-soft:#eaf3de; --danger:#993c1d; --danger-soft:#faece7;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--ink);
-    font-family:'Pretendard','Space Grotesk',-apple-system,'Malgun Gothic',sans-serif;
-    line-height:1.6;
-    -webkit-font-smoothing:antialiased;
-    word-break:keep-all;
-  }
-  a{color:inherit;}
-  .wrap{max-width:1040px; margin:0 auto; padding:0 28px;}
-  .mono{font-family:'JetBrains Mono',monospace; letter-spacing:0.02em;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px;}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:22px;border-bottom:2px solid var(--ink);padding-bottom:14px;}
+  .top h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-0.3px;}
+  .top .sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .top .actions{display:flex;gap:8px;}
+  button{font-family:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--panel);padding:9px 14px;font-size:13px;color:var(--ink);transition:background .15s;}
+  button:hover{background:#f1efe6;}
+  button.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  button.primary:hover{background:#333831;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .card .label{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+  .card .val{font-size:20px;font-weight:700;}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:20px;}
+  .panel h2{font-size:14px;font-weight:700;margin:0 0 14px;}
+  .grid-form{display:grid;grid-template-columns:120px 1fr 130px;gap:10px;margin-bottom:10px;}
+  .grid-form2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+  .grid-form3{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  label{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;}
+  input,select{width:100%;font-family:inherit;font-size:13.5px;padding:8px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);}
+  input:focus,select:focus{outline:none;border-color:var(--ink-soft);}
+  .err{color:var(--danger);font-size:12px;margin-top:6px;display:none;}
+  .field-wrap{margin-bottom:2px;}
+  table{width:100%;border-collapse:collapse;font-size:12.8px;}
+  thead th{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:600;padding:8px 8px;border-bottom:1px solid var(--ink);white-space:nowrap;}
+  tbody td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:hover{background:#f7f5ee;}
+  .amt{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:20px;white-space:nowrap;}
+  .tag-advisor{background:var(--accent-soft);color:#27500a;}
+  .tag-corp{background:#e6f1fb;color:#0c447c;}
+  .tag-none{background:var(--danger-soft);color:#712b13;}
+  .del{background:none;border:none;color:var(--ink-soft);font-size:15px;padding:2px 6px;}
+  .del:hover{color:var(--danger);}
+  .empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:30px 0;}
+  .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+  .filter-row select{width:auto;min-width:110px;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .note{font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:20px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;}
+  .fab-add{display:none;}
+  .tabbar{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line);}
+  .tab-btn{background:none;border:none;border-radius:0;padding:10px 16px;font-size:13.5px;color:var(--ink-soft);border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:700;}
+  .tab-btn:hover{background:none;color:var(--ink);}
+  .salary-calc-box, .net-pay-box{background:#f7f5ee;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.9;}
+  .salary-calc-box .row, .net-pay-box .row{display:flex;justify-content:space-between;}
+  .net-pay-box{background:var(--accent-soft);font-weight:700;font-size:14.5px;}
+  #loginScreen{max-width:340px;margin:80px auto;text-align:center;}
+  #loginScreen h1{font-size:20px;margin-bottom:6px;}
+  #loginScreen p{font-size:12.5px;color:var(--ink-soft);margin-bottom:20px;}
+  #loginScreen input{margin-bottom:10px;}
+  #loginScreen .err{display:block;min-height:16px;}
+  #app{display:none;}
 
-  header{
-    position:sticky; top:0; z-index:20;
-    background:rgba(250,250,248,0.86);
-    backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--line);
-  }
-  .nav{display:flex; align-items:center; justify-content:space-between; padding:18px 28px;}
-  .brand{display:flex; align-items:center; gap:10px; text-decoration:none;}
-  .brand svg{width:30px; height:30px; display:block;}
-  .brand-word{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px;}
-  .brand-word .e{color:var(--purple);}
-  .brand-word .p{color:var(--mint);}
-  .brand-word .lab{
-    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:11.5px; color:#fff;
-    background:var(--mint); border-radius:6px; padding:3px 7px; margin-left:6px; letter-spacing:0.03em;
-    vertical-align:2px;
-  }
-  .nav-links{display:flex; gap:28px; align-items:center;}
-  .nav-links a{font-size:14.5px; color:var(--gray); text-decoration:none;}
-  .nav-links a:hover{color:var(--ink);}
-  .nav-cta{
-    background:var(--ink); color:#fff !important; padding:9px 18px; border-radius:999px;
-    font-size:14px; font-weight:500;
-  }
-
-  .hero{padding:88px 0 0; overflow:hidden;}
-  .hero-grid{display:grid; grid-template-columns:1.2fr 0.8fr; gap:24px; align-items:center;}
-  .hero-top{max-width:640px;}
-  .eyebrow{
-    display:inline-flex; align-items:center; gap:8px;
-    font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--gray);
-    margin-bottom:26px; text-transform:uppercase; letter-spacing:0.08em;
-  }
-  .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); display:inline-block;}
-  h1{
-    font-family:'Space Grotesk','Pretendard',sans-serif;
-    font-weight:700;
-    font-size:clamp(32px, 4.4vw, 50px);
-    line-height:1.32;
-    margin:0 0 26px;
-    letter-spacing:-0.015em;
-  }
-  h1 .accent-p{color:var(--purple);}
-  h1 .accent-m{color:var(--mint);}
-  .lede{font-size:17px; color:var(--gray); max-width:560px; margin:0 0 40px;}
-  .cta-row{display:flex; gap:12px; flex-wrap:wrap;}
-  .btn{
-    display:inline-flex; align-items:center; gap:8px;
-    padding:13px 24px; border-radius:999px; font-size:15px; font-weight:500;
-    text-decoration:none; border:1px solid transparent; cursor:pointer;
-  }
-  .btn-primary{background:var(--ink); color:#fff;}
-  .btn-primary:hover{background:var(--mint-dark);}
-  .btn-ghost{border-color:var(--line); color:var(--ink); background:#fff;}
-  .btn-ghost:hover{border-color:var(--mint);}
-
-  .stat-bar{
-    margin-top:64px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-    display:grid; grid-template-columns:repeat(4, 1fr);
-  }
-  .stat-bar .sitem{
-    padding:26px 28px; border-left:1px solid var(--line);
-  }
-  .stat-bar .sitem:first-child{border-left:none;}
-  .stat-bar .sitem b{
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:26px; display:block; margin-bottom:4px;
-  }
-  .stat-bar .sitem span{font-size:12.5px; color:var(--gray);}
-
-  .hero-mark{
-    position:relative; width:100%; max-width:380px; margin:0 auto; aspect-ratio:1/1;
-    transform:rotate(-4deg);
-  }
-  .hero-mark svg{width:100%; height:100%; display:block;}
-
-  section{padding:80px 0;}
-  .section-head{max-width:560px; margin:0 0 48px;}
-  .section-label{
-    font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--gray);
-    text-transform:uppercase; letter-spacing:0.08em; margin:0 0 10px;
-  }
-  h2{font-family:'Space Grotesk','Pretendard',sans-serif; font-size:28px; font-weight:700; margin:0 0 12px; letter-spacing:-0.01em;}
-  .section-desc{color:var(--gray); font-size:15px; margin:0; max-width:480px;}
-
-  .services{
-    display:grid; grid-template-columns:repeat(3, 1fr);
-    border-top:1px solid var(--line); border-left:1px solid var(--line);
-  }
-  .card{
-    background:#fff; border-right:1px solid var(--line); border-bottom:1px solid var(--line);
-    padding:32px 28px; display:flex; flex-direction:column; gap:12px;
-  }
-  .card-num{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--gray);}
-  .card h3{font-size:18px; margin:0; font-weight:700;}
-  .card p{font-size:14.5px; color:var(--gray); margin:0;}
-
-  .products{
-    display:grid; grid-template-columns:1fr 1fr;
-    border-top:1px solid var(--line); border-left:1px solid var(--line);
-  }
-  .pcard{
-    background:#fff; border-right:1px solid var(--line); border-bottom:1px solid var(--line);
-    display:flex; flex-direction:column;
-  }
-  .pshot-frame{
-    background:#EDEFEA; border-bottom:1px solid var(--line); padding:14px 14px 0; overflow:hidden;
-  }
-  .pshot-bar{display:flex; gap:5px; padding-bottom:10px;}
-  .pshot-bar span{width:8px; height:8px; border-radius:50%; background:#D6D9D2;}
-  .pshot-frame img{
-    width:100%; display:block; border-radius:6px 6px 0 0;
-    box-shadow:0 -1px 0 rgba(0,0,0,0.03);
-  }
-  .pcard-body{padding:28px 28px 32px; display:flex; flex-direction:column; gap:16px;}
-  .pcard-top{display:flex; align-items:center; justify-content:space-between;}
-  .pcard-name{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:21px;}
-  .pcard-tag{
-    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--gray);
-    border:1px solid var(--line); padding:3px 9px; border-radius:4px;
-  }
-  .pcard-desc{font-size:14.5px; color:var(--gray); margin:0;}
-  .pcard-features{list-style:none; padding:0; margin:4px 0 0; display:flex; flex-direction:column; gap:9px;}
-  .pcard-features li{font-size:14px; color:var(--ink); display:flex; gap:9px; align-items:flex-start;}
-  .pcard-features li svg{flex-shrink:0; margin-top:3px;}
-
-  .about{
-    background:var(--ink); color:#fff;
-    padding:72px 0;
-  }
-  .about .wrap{max-width:1040px; padding:0 28px; margin:0 auto;}
-  .about-inner{display:grid; grid-template-columns:0.9fr 1.1fr; gap:40px; align-items:start;}
-  .about h2{color:#fff;}
-  .about-label{font-family:'JetBrains Mono',monospace; color:var(--mint); font-size:12.5px; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.08em;}
-  .about p{color:#C7CCD3; font-size:15.5px;}
-  .stat-row{display:grid; grid-template-columns:repeat(3, 1fr); gap:0; margin-top:32px; border-top:1px solid #333B45;}
-  .stat-row .stat{padding:26px 18px 6px; border-right:1px solid #333B45; text-align:center;}
-  .stat-row .stat:last-child{border-right:none;}
-  .stat-icon{
-    width:38px; height:38px; margin:0 auto 14px; border-radius:50%;
-    background:rgba(20,184,166,0.14); display:flex; align-items:center; justify-content:center;
-  }
-  .stat-icon svg{width:19px; height:19px;}
-  .stat b{font-family:'Space Grotesk',sans-serif; font-size:22px; display:block; color:#fff; margin-bottom:4px;}
-  .stat span{font-size:12.5px; color:#9AA2AC;}
-
-  .contact{
-    background:#fff; border:1px solid var(--line);
-    padding:44px; display:grid; grid-template-columns:1fr auto; gap:24px; align-items:center;
-  }
-  .contact h2{margin-bottom:8px;}
-  .contact-list{list-style:none; padding:0; margin:18px 0 0; display:flex; flex-direction:column; gap:8px;}
-  .contact-list a{text-decoration:none; font-size:15px;}
-  .contact-list .lbl{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--gray); margin-right:10px;}
-
-  footer{border-top:1px solid var(--line); padding:28px 0; margin-top:20px;}
-  .footer-row{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
-  .footer-row span{font-size:13px; color:var(--gray);}
-  .tagline-foot{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--gray); letter-spacing:0.06em;}
-
-  @media (max-width: 860px){
-    .hero{padding:64px 0 0;}
-    .hero-grid{grid-template-columns:1fr;}
-    .hero-mark{max-width:220px; order:-1; margin-bottom:8px;}
-    .stat-bar{grid-template-columns:repeat(2, 1fr);}
-    .stat-bar .sitem:nth-child(3){border-left:none;}
-    .services{grid-template-columns:1fr;}
-    .products{grid-template-columns:1fr;}
-    .about-inner{grid-template-columns:1fr;}
-    .stat-row{grid-template-columns:repeat(3, 1fr);}
-    .contact{grid-template-columns:1fr; padding:32px 24px;}
-    .nav-links a:not(.nav-cta){display:none;}
-    .wrap{padding:0 20px;}
+  @media (max-width: 640px){
+    .wrap{padding:16px 12px 90px;}
+    .top{flex-direction:column;align-items:stretch;gap:10px;}
+    .top .actions{width:100%;}
+    .top .actions button{width:100%;padding:11px;}
+    .top h1{font-size:19px;}
+    .cards{grid-template-columns:repeat(2,1fr);gap:8px;}
+    .card{padding:11px 12px;}
+    .card .val{font-size:17px;}
+    .panel{padding:14px 14px;border-radius:12px;}
+    .grid-form,.grid-form2,.grid-form3{grid-template-columns:1fr;gap:10px;}
+    input,select{font-size:16px;padding:11px 10px;}
+    .toolbar{flex-direction:column;align-items:stretch;}
+    .filter-row{width:100%;}
+    .filter-row select{flex:1;}
+    table thead{display:none;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:10px 12px;background:#fff;}
+    tbody td{border:none;padding:4px 0;display:flex;justify-content:space-between;gap:10px;font-size:13px;}
+    tbody td:before{content:attr(data-label);color:var(--ink-soft);font-size:11px;flex-shrink:0;padding-top:1px;}
+    tbody td.amt{font-weight:700;font-size:14.5px;}
+    tbody td:last-child{justify-content:flex-end;}
+    tbody td:last-child:before{content:'';}
+    .fab-add{display:flex;position:fixed;bottom:18px;right:18px;left:18px;z-index:15;justify-content:center;}
+    .fab-add button{width:100%;max-width:420px;padding:14px;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.18);}
   }
 </style>
 </head>
 <body>
 
-<header>
-  <nav class="nav wrap" style="padding-left:0; padding-right:0;">
-    <a href="#top" class="brand">
-      <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="4" width="112" height="112" rx="26" stroke="#14B8A6" stroke-width="4"/>
-        <g fill="#14B8A6">
-          <rect x="34" y="30" width="9" height="9" rx="1.5"/><rect x="34" y="43.5" width="9" height="9" rx="1.5"/><rect x="34" y="57" width="9" height="9" rx="1.5"/><rect x="34" y="70.5" width="9" height="9" rx="1.5"/><rect x="34" y="84" width="9" height="9" rx="1.5"/>
-          <rect x="47.5" y="30" width="9" height="9" rx="1.5"/><rect x="47.5" y="43.5" width="9" height="9" rx="1.5"/><rect x="47.5" y="57" width="9" height="9" rx="1.5"/><rect x="47.5" y="70.5" width="9" height="9" rx="1.5"/>
-          <rect x="61" y="43.5" width="9" height="9" rx="1.5"/><rect x="61" y="57" width="9" height="9" rx="1.5"/><rect x="61" y="70.5" width="9" height="9" rx="1.5"/>
-          <rect x="74.5" y="57" width="9" height="9" rx="1.5"/>
-        </g>
-      </svg>
-      <span class="brand-word"><span class="e">Easy</span><span class="p">Play</span><span class="lab">LAB</span></span>
-    </a>
-    <div class="nav-links">
-      <a href="#products">제품</a>
-      <a href="#services">서비스</a>
-      <a href="#about">소개</a>
-      <a href="#contact" class="nav-cta">상담 문의</a>
-    </div>
-  </nav>
-</header>
+<div id="loginScreen">
+  <h1>FMS</h1>
+  <p>등록된 계정으로 로그인하세요.</p>
+  <input type="email" id="loginEmail" placeholder="이메일">
+  <input type="password" id="loginPw" placeholder="비밀번호">
+  <div class="err" id="loginErr"></div>
+  <button class="primary" id="loginBtn" style="width:100%;padding:11px;">로그인</button>
+</div>
 
-<main id="top">
-  <section class="hero wrap">
-    <div class="hero-grid">
-      <div class="hero-top">
-        <div class="eyebrow">소규모 사업자 IT 전환 파트너</div>
-        <h1>소규모 사업자의 디지털 전환을 설계하고,<br>직접 만들고, 끝까지 함께 운영하는<br><span class="accent-p">Easy</span><span class="accent-m">Play</span>&nbsp;Lab입니다.</h1>
-        <p class="lede">복잡한 시스템 도입이 아니라, 지금 사업에 필요한 만큼의 변화를 컨설팅부터 개발까지 직접 실행합니다. 만들고 나서도 곁에서 함께 운영합니다.</p>
-        <div class="cta-row">
-          <a href="#contact" class="btn btn-primary">무료 상담 신청</a>
-          <a href="#products" class="btn btn-ghost">제품 살펴보기</a>
-        </div>
-      </div>
-      <div class="hero-mark">
-        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="4" width="112" height="112" rx="26" stroke="#14B8A6" stroke-width="4"/>
-          <g fill="#14B8A6">
-            <rect x="34" y="30" width="9" height="9" rx="1.5"/><rect x="34" y="43.5" width="9" height="9" rx="1.5"/><rect x="34" y="57" width="9" height="9" rx="1.5"/><rect x="34" y="70.5" width="9" height="9" rx="1.5"/><rect x="34" y="84" width="9" height="9" rx="1.5"/>
-            <rect x="47.5" y="30" width="9" height="9" rx="1.5"/><rect x="47.5" y="43.5" width="9" height="9" rx="1.5"/><rect x="47.5" y="57" width="9" height="9" rx="1.5"/><rect x="47.5" y="70.5" width="9" height="9" rx="1.5"/>
-            <rect x="61" y="43.5" width="9" height="9" rx="1.5"/><rect x="61" y="57" width="9" height="9" rx="1.5"/><rect x="61" y="70.5" width="9" height="9" rx="1.5"/>
-            <rect x="74.5" y="57" width="9" height="9" rx="1.5"/>
-          </g>
-        </svg>
-      </div>
+<div id="app">
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>FMS</h1>
+      <div class="sub">개인 사업소득(고문료) 지출관리 · 대표이사 급여관리 · Firestore 저장</div>
     </div>
-    <div class="stat-bar">
-      <div class="sitem"><b>2</b><span>자체 개발 제품 운영 중</span></div>
-      <div class="sitem"><b>8개국어</b><span>AI 자막 번역 지원</span></div>
-      <div class="sitem"><b>원스톱</b><span>컨설팅부터 개발까지</span></div>
-      <div class="sitem"><b>20년+</b><span>기업 IT·DX 전략 경험</span></div>
+    <div class="actions">
+      <button id="exportBtn">엑셀로 내보내기</button>
+      <button id="logoutBtn">로그아웃</button>
     </div>
-  </section>
-
-  <section id="products" class="wrap">
-    <div class="section-head">
-      <p class="section-label">Products</p>
-      <h2>지금 만들고 있는 제품</h2>
-      <p class="section-desc">현장의 문제를 직접 해결하며 만든, 실제로 쓰는 제품들입니다.</p>
-    </div>
-    <div class="products">
-      <div class="pcard">
-        <div class="pshot-frame">
-          <div class="pshot-bar"><span></span><span></span><span></span></div>
-          <img src="/easytrans-shot.jpg" alt="Easy Trans 영상 번역 편집 화면" loading="lazy">
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-top">
-            <span class="pcard-name">Easy Trans</span>
-            <span class="pcard-tag">AI 영상 번역</span>
-          </div>
-          <p class="pcard-desc">AI 기반 스마트 영상 번역 및 자막 편집 솔루션</p>
-          <ul class="pcard-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>영상·이미지 자르기 및 편집</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>자막 다국어 변환 (8개국어 지원)</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>영상 내용 기반 학습용 문항 콘텐츠 자동 생성</li>
-          </ul>
-        </div>
-      </div>
-      <div class="pcard">
-        <div class="pshot-frame">
-          <div class="pshot-bar"><span></span><span></span><span></span></div>
-          <img src="/easyibt-shot.jpg" alt="Easy IBT 온라인 평가 시스템 화면" loading="lazy">
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-top">
-            <span class="pcard-name">Easy IBT</span>
-            <span class="pcard-tag">온라인 평가</span>
-          </div>
-          <p class="pcard-desc">읽기·듣기·쓰기 영역을 지원하는 온라인 평가 시스템</p>
-          <ul class="pcard-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>읽기·듣기·쓰기 영역 문항 업로드 및 편집</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>온라인 응시 환경 제공</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>간편한 평가 운영 및 관리</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="services" class="wrap">
-    <div class="section-head">
-      <p class="section-label">Services</p>
-      <h2>무엇을 도와드리나요</h2>
-      <p class="section-desc">거창한 시스템 도입이 아니라, 지금 당장 사업에 도움이 되는 실질적인 변화를 만듭니다.</p>
-    </div>
-    <div class="services">
-      <div class="card">
-        <div class="card-num">01</div>
-        <h3>IT 전환 컨설팅</h3>
-        <p>지금 사업 구조에 정말 필요한 디지털 전환이 무엇인지, 우선순위와 방향을 함께 정리합니다.</p>
-      </div>
-      <div class="card">
-        <div class="card-num">02</div>
-        <h3>맞춤 툴 개발</h3>
-        <p>비싼 솔루션 대신, 우리 가게 일하는 방식에 꼭 맞는 가볍고 쓰기 쉬운 도구를 만들어 드립니다.</p>
-      </div>
-      <div class="card">
-        <div class="card-num">03</div>
-        <h3>지속적인 파트너십</h3>
-        <p>만들고 끝이 아니라, 운영하면서 생기는 문제를 계속 함께 개선해 나갑니다.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="about">
-    <div class="about">
-      <div class="wrap" style="padding:0;">
-        <div class="about-inner">
-          <div>
-            <p class="about-label">About</p>
-            <h2>왜 EasyPlay Lab인가요</h2>
-          </div>
-          <div>
-            <p>오랫동안 기업의 IT 전략과 디지털 전환을 이끌어온 경험을 바탕으로, 이제는 소규모 사업자 곁에서 같은 노하우를 나눕니다. 어렵고 낯선 IT 용어 대신, 사장님의 언어로 설명하고 함께 결정합니다.</p>
-            <div class="stat-row">
-              <div class="stat">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><path d="M7.4 12h9.2"/><circle cx="12" cy="12" r="2.4" fill="#14B8A6" stroke="none"/></svg></div>
-                <b>원스톱</b><span>상담부터 개발까지</span>
-              </div>
-              <div class="stat">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="4" x2="5" y2="20"/><circle cx="5" cy="9" r="2"/><line x1="12" y1="4" x2="12" y2="20"/><circle cx="12" cy="15" r="2"/><line x1="19" y1="4" x2="19" y2="20"/><circle cx="19" cy="7" r="2"/></svg></div>
-                <b>맞춤</b><span>가게마다 다른 해법</span>
-              </div>
-              <div class="stat">
-                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 4v4h-4"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 20v-4h4"/></svg></div>
-                <b>지속</b><span>만든 후에도 함께</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="contact" class="wrap">
-    <div class="contact">
-      <div>
-        <h2>지금 상담을 시작해보세요</h2>
-        <p class="section-desc">간단한 질문이라도 괜찮습니다. 편하게 연락 주세요.</p>
-        <ul class="contact-list">
-          <li><span class="lbl mono">NAME</span>사영선</li>
-          <li><span class="lbl mono">TEL</span><a href="tel:+821020156438">+82 10 2015 6438</a></li>
-          <li><span class="lbl mono">MAIL</span><a href="mailto:youngseon@easyplay.it.kr">youngseon@easyplay.it.kr</a></li>
-        </ul>
-      </div>
-      <a href="mailto:youngseon@easyplay.it.kr" class="btn btn-primary">이메일로 문의하기</a>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <div class="wrap footer-row">
-    <span>© 2026 EasyPlay Lab. All rights reserved.</span>
-    <span class="tagline-foot">MAKE IT EASY, MAKE WORK PLAY</span>
   </div>
-</footer>
 
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="expense">지출관리</button>
+    <button class="tab-btn" data-tab="salary">급여관리</button>
+  </div>
+
+  <div id="tab-expense">
+  <div class="cards" id="summaryCards"></div>
+
+  <div class="panel">
+    <h2>새 지출 기록</h2>
+    <div class="grid-form">
+      <div class="field-wrap"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="field-wrap"><label>적요 (지출 내용)</label><input type="text" id="f-desc" placeholder="예: OO사 김부장 미팅 저녁식사"></div>
+      <div class="field-wrap"><label>금액 (원)</label><input type="number" id="f-amount" placeholder="0" min="0" step="1"></div>
+    </div>
+    <div class="grid-form2">
+      <div class="field-wrap"><label>구분</label>
+        <select id="f-type">
+          <option value="고문경비">고문경비</option>
+          <option value="법인경비(참고)">법인경비(참고)</option>
+          <option value="불인정(개인)">불인정(개인)</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>카테고리</label>
+        <select id="f-category">
+          <option>사무실 임대료</option><option>교통비</option><option>주유비</option><option>접대비</option>
+          <option>소모품비</option><option>통신비</option><option>도서·교육비</option><option>기타</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>증빙종류</label>
+        <select id="f-proof">
+          <option>카드매출전표</option><option>현금영수증(지출증빙용)</option><option>세금계산서</option><option>계산서</option><option>기타</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-form3">
+      <div class="field-wrap"><label>거래처 / 참석자</label><input type="text" id="f-partner" list="partnerList" placeholder="예: OO사 김부장 외 1인" autocomplete="off"><datalist id="partnerList"></datalist></div>
+      <div class="field-wrap"><label>차량 (주유비/차량 관련 지출 시)</label>
+        <select id="f-vehicle">
+          <option value="">선택 안 함</option>
+          <option value="GV80">GV80 (고문업무 전용)</option>
+          <option value="레이">레이 (법인 자가운전보조금 차량 — 원칙적으로 기록 안 함)</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-form3">
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고 (목적 등)</label><input type="text" id="f-memo" list="memoList" placeholder="예: 3분기 자문 관련 논의, 법인 건 아님" autocomplete="off"><datalist id="memoList"></datalist></div>
+    </div>
+    <div class="err" id="formErr"></div>
+    <button class="primary" id="addBtn" style="margin-top:6px;">기록 추가</button>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0;">지출 내역</h2>
+      <div class="filter-row" style="margin:0;">
+        <select id="filterMonth"></select>
+        <select id="filterType">
+          <option value="">전체 구분</option>
+          <option value="고문경비">고문경비</option>
+          <option value="법인경비(참고)">법인경비(참고)</option>
+          <option value="불인정(개인)">불인정(개인)</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>날짜</th><th>구분</th><th>카테고리</th><th>적요</th><th>거래처/참석자</th><th>증빙</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg" style="display:none;">아직 기록된 지출이 없습니다. 위에서 새 지출을 추가해보세요.</div>
+    </div>
+    <div class="note">3만원 초과 지출은 적격증빙(카드매출전표 / 지출증빙용 현금영수증 / 세금계산서)이 있어야 경비로 인정됩니다. 접대비는 거래처·참석자·목적을 함께 기록해두면 나중에 소명이 쉽습니다.<br><br>
+    <b>차량·주유비 관련:</b> 자가운전보조금(비과세 20만원)을 받는 <u>법인 업무용 차량</u>의 주유비는 이미 급여로 정산된 것이므로 여기 기록하지 않습니다. <u>고문업무 전용으로 쓰시는 별도 차량</u>의 주유비는 "주유비" 카테고리로 정상 기록하시면 됩니다 (비고란에 어느 차량인지 적어두면 나중에 구분이 쉬워요).</div>
+  </div>
+  </div>
+
+  <div id="tab-salary" style="display:none;">
+    <div class="panel">
+      <h2>급여 계산 (일할계산 자동)</h2>
+      <div class="grid-form2">
+        <div class="field-wrap"><label>지급 연월</label><input type="month" id="s-yearmonth"></div>
+        <div class="field-wrap"><label>근무 시작일</label><input type="date" id="s-startdate"></div>
+        <div class="field-wrap"><label>근무 종료일</label><input type="date" id="s-enddate"></div>
+      </div>
+      <div class="grid-form2">
+        <div class="field-wrap"><label>기본급 (월, 과세)</label><input type="number" id="s-base" value="1100000" step="1000"></div>
+        <div class="field-wrap"><label>식대 (월, 비과세)</label><input type="number" id="s-meal" value="200000" step="1000"></div>
+        <div class="field-wrap"><label>자가운전보조금 (월, 비과세)</label><input type="number" id="s-driving" value="200000" step="1000"></div>
+      </div>
+      <div class="salary-calc-box" id="salaryCalcBox"></div>
+      <div class="grid-form2">
+        <div class="field-wrap"><label>원천징수 소득세 (간이세액표 조회값, 원)</label><input type="number" id="s-incometax" value="0" step="10"></div>
+        <div class="field-wrap"><label>지방소득세 (자동, 소득세×10%)</label><input type="text" id="s-localtax" disabled></div>
+        <div class="field-wrap"><label>실지급일</label><input type="date" id="s-paiddate"></div>
+      </div>
+      <div class="net-pay-box" id="netPayBox"></div>
+      <div class="err" id="salaryErr"></div>
+      <button class="primary" id="saveSalaryBtn" style="margin-top:10px;">이 달 급여 기록 저장</button>
+    </div>
+
+    <div class="panel">
+      <h2>급여 지급 이력</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>지급월</th><th>근무기간</th><th>근무일수</th><th>과세급여</th><th>비과세</th><th>소득세</th><th>지방세</th><th class="amt">순지급액</th><th></th></tr></thead>
+          <tbody id="salaryRows"></tbody>
+        </table>
+        <div class="empty" id="salaryEmptyMsg" style="display:none;">아직 저장된 급여 기록이 없습니다.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// ===== 여기를 Firebase 콘솔에서 발급받은 값으로 채워주세요 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDXD8PlqEGRGPPp6Lts7a26fXXAaPlq2Dg",
+  authDomain: "easyplayfms.firebaseapp.com",
+  projectId: "easyplayfms",
+  storageBucket: "easyplayfms.firebasestorage.app",
+  messagingSenderId: "558327904829",
+  appId: "1:558327904829:web:276a1afcbbf68edad5c854"
+};
+// ============================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let expenses = [];
+let unsub = null;
+let salaries = [];
+let salaryUnsub = null;
+
+function fmtWon(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+function fmtMonth(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+
+function typeTagClass(t){
+  if(t === '고문경비') return 'tag-advisor';
+  if(t === '법인경비(참고)') return 'tag-corp';
+  return 'tag-none';
+}
+
+function populateMonthFilter(){
+  const sel = document.getElementById('filterMonth');
+  const months = Array.from(new Set(expenses.map(e => fmtMonth(e.date)))).filter(Boolean).sort().reverse();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">전체 월</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+  if(months.includes(current)) sel.value = current;
+}
+function populateHistoryLists(){
+  const partners = Array.from(new Set(expenses.map(e => (e.partner||'').trim()).filter(Boolean)));
+  const memos = Array.from(new Set(expenses.map(e => (e.memo||'').trim()).filter(Boolean)));
+  document.getElementById('partnerList').innerHTML = partners.map(p => `<option value="${escapeHtml(p)}">`).join('');
+  document.getElementById('memoList').innerHTML = memos.map(m => `<option value="${escapeHtml(m)}">`).join('');
+}
+function getFiltered(){
+  const month = document.getElementById('filterMonth').value;
+  const type = document.getElementById('filterType').value;
+  return expenses.filter(e => {
+    if(month && fmtMonth(e.date) !== month) return false;
+    if(type && e.type !== type) return false;
+    return true;
+  });
+}
+function render(){
+  populateMonthFilter();
+  populateHistoryLists();
+  const list = getFiltered().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
+  const tbody = document.getElementById('rows');
+  const emptyMsg = document.getElementById('emptyMsg');
+  if(list.length === 0){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = list.map(e => `
+      <tr>
+        <td data-label="날짜">${e.date || ''}</td>
+        <td data-label="구분"><span class="tag ${typeTagClass(e.type)}">${e.type}</span></td>
+        <td data-label="카테고리">${e.category}</td>
+        <td data-label="적요">${escapeHtml(e.desc)}</td>
+        <td data-label="거래처/참석자">${escapeHtml(e.partner || '')}</td>
+        <td data-label="증빙">${e.proof}</td>
+        <td data-label="비고">${escapeHtml(e.memo || '')}</td>
+        <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
+        <td><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
+      </tr>
+    `).join('');
+  }
+  document.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
+  renderSummary();
+}
+function renderSummary(){
+  const filtered = getFiltered();
+  const total = filtered.reduce((s,e) => s + Number(e.amount||0), 0);
+  const advisorTotal = filtered.filter(e => e.type === '고문경비').reduce((s,e) => s + Number(e.amount||0), 0);
+  const count = filtered.length;
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0,7);
+  const thisMonthTotal = expenses.filter(e => fmtMonth(e.date) === thisMonth && e.type === '고문경비').reduce((s,e) => s + Number(e.amount||0), 0);
+  const cards = [
+    {label:'현재 필터 합계', val: fmtWon(total)},
+    {label:'고문경비 합계 (필터 기준)', val: fmtWon(advisorTotal)},
+    {label:'이번 달 고문경비', val: fmtWon(thisMonthTotal)},
+    {label:'기록 건수', val: count + '건'},
+  ];
+  document.getElementById('summaryCards').innerHTML = cards.map(c => `<div class="card"><div class="label">${c.label}</div><div class="val">${c.val}</div></div>`).join('');
+}
+
+function userCollection(uid){
+  return collection(db, 'users', uid, 'expenses');
+}
+
+function subscribeExpenses(uid){
+  const q = query(userCollection(uid), orderBy('date', 'desc'));
+  unsub = onSnapshot(q, (snap) => {
+    expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+  }, (err) => {
+    showToast('데이터를 불러오지 못했습니다');
+    console.error(err);
+  });
+}
+
+async function deleteRow(id){
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await deleteDoc(doc(db, 'users', uid, 'expenses', id));
+    showToast('삭제되었습니다');
+  }catch(e){
+    showToast('삭제 중 오류가 발생했습니다');
+  }
+}
+
+// ===== 급여관리 =====
+function salaryCollection(uid){
+  return collection(db, 'users', uid, 'salaries');
+}
+
+function subscribeSalaries(uid){
+  const q = query(salaryCollection(uid), orderBy('yearMonth', 'desc'));
+  salaryUnsub = onSnapshot(q, (snap) => {
+    salaries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderSalaryTable();
+  }, (err) => {
+    showToast('급여 데이터를 불러오지 못했습니다');
+    console.error(err);
+  });
+}
+
+async function deleteSalaryRow(id){
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await deleteDoc(doc(db, 'users', uid, 'salaries', id));
+    showToast('급여 기록이 삭제되었습니다');
+  }catch(e){
+    showToast('삭제 중 오류가 발생했습니다');
+  }
+}
+
+function daysInMonth(yearMonth){
+  const [y, m] = yearMonth.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
+function calcSalaryPreview(){
+  const ym = document.getElementById('s-yearmonth').value;
+  const startD = document.getElementById('s-startdate').value;
+  const endD = document.getElementById('s-enddate').value;
+  const base = Number(document.getElementById('s-base').value) || 0;
+  const meal = Number(document.getElementById('s-meal').value) || 0;
+  const driving = Number(document.getElementById('s-driving').value) || 0;
+  const incomeTax = Number(document.getElementById('s-incometax').value) || 0;
+  const localTax = Math.round(incomeTax * 0.1);
+  document.getElementById('s-localtax').value = fmtWon(localTax);
+
+  const box = document.getElementById('salaryCalcBox');
+  const netBox = document.getElementById('netPayBox');
+
+  if(!ym || !startD || !endD){
+    box.innerHTML = '<div style="color:var(--ink-soft);">지급 연월과 근무 시작일·종료일을 입력하면 일할계산 결과가 표시됩니다.</div>';
+    netBox.innerHTML = '';
+    return null;
+  }
+
+  const total = daysInMonth(ym);
+  const s = new Date(startD), e = new Date(endD);
+  const workDays = Math.round((e - s) / 86400000) + 1;
+
+  if(workDays <= 0 || workDays > total){
+    box.innerHTML = '<div style="color:var(--danger);">근무일 계산이 올바르지 않습니다. 날짜를 확인하세요.</div>';
+    netBox.innerHTML = '';
+    return null;
+  }
+
+  const isFullMonth = workDays === total;
+  const ratio = workDays / total;
+  const pBase = isFullMonth ? base : Math.round(base * ratio);
+  const pMeal = isFullMonth ? meal : Math.round(meal * ratio);
+  const pDriving = isFullMonth ? driving : Math.round(driving * ratio);
+  const grossTaxable = pBase;
+  const grossNonTaxable = pMeal + pDriving;
+  const grossTotal = grossTaxable + grossNonTaxable;
+  const netPay = grossTotal - incomeTax - localTax;
+
+  box.innerHTML = `
+    <div class="row"><span>해당월 총일수 / 근무일수</span><span>${total}일 / ${workDays}일 ${isFullMonth ? '(전체 근무)' : '(일할계산)'}</span></div>
+    <div class="row"><span>기본급 (과세)</span><span>${fmtWon(pBase)}</span></div>
+    <div class="row"><span>식대 (비과세)</span><span>${fmtWon(pMeal)}</span></div>
+    <div class="row"><span>자가운전보조금 (비과세)</span><span>${fmtWon(pDriving)}</span></div>
+    <div class="row" style="border-top:1px solid var(--line);padding-top:6px;margin-top:4px;"><span>총지급액</span><span>${fmtWon(grossTotal)}</span></div>
+  `;
+  netBox.innerHTML = `<div class="row"><span>순지급액 (실제 이체할 금액)</span><span>${fmtWon(netPay)}</span></div>`;
+
+  return { ym, startD, endD, total, workDays, isFullMonth, base, meal, driving, pBase, pMeal, pDriving, grossTaxable, grossNonTaxable, grossTotal, incomeTax, localTax, netPay };
+}
+
+function renderSalaryTable(){
+  const tbody = document.getElementById('salaryRows');
+  const emptyMsg = document.getElementById('salaryEmptyMsg');
+  const sorted = salaries.slice().sort((a,b) => a.yearMonth < b.yearMonth ? 1 : -1);
+  if(sorted.length === 0){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  tbody.innerHTML = sorted.map(s => `
+    <tr>
+      <td data-label="지급월">${s.yearMonth}</td>
+      <td data-label="근무기간">${s.startD} ~ ${s.endD}</td>
+      <td data-label="근무일수">${s.workDays}/${s.total}일</td>
+      <td data-label="과세급여">${fmtWon(s.grossTaxable)}</td>
+      <td data-label="비과세">${fmtWon(s.grossNonTaxable)}</td>
+      <td data-label="소득세">${fmtWon(s.incomeTax)}</td>
+      <td data-label="지방세">${fmtWon(s.localTax)}</td>
+      <td class="amt" data-label="순지급액">${fmtWon(s.netPay)}</td>
+      <td><button class="del" title="삭제" data-sid="${s.id}">✕</button></td>
+    </tr>
+  `).join('');
+  document.querySelectorAll('[data-sid]').forEach(btn => btn.addEventListener('click', () => deleteSalaryRow(btn.getAttribute('data-sid'))));
+}
+
+['s-yearmonth','s-startdate','s-enddate','s-base','s-meal','s-driving','s-incometax'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcSalaryPreview);
+});
+
+document.getElementById('saveSalaryBtn').addEventListener('click', async () => {
+  const result = calcSalaryPreview();
+  const errEl = document.getElementById('salaryErr');
+  const paidDate = document.getElementById('s-paiddate').value;
+  if(!result){ errEl.textContent = '입력값을 확인해주세요.'; errEl.style.display = 'block'; return; }
+  if(!paidDate){ errEl.textContent = '실지급일을 입력하세요.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await addDoc(salaryCollection(uid), { ...result, paidDate });
+    showToast('급여 기록이 저장되었습니다');
+  }catch(e){
+    showToast('저장 중 오류가 발생했습니다');
+  }
+});
+
+// 탭 전환
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.getAttribute('data-tab');
+    document.getElementById('tab-expense').style.display = target === 'expense' ? '' : 'none';
+    document.getElementById('tab-salary').style.display = target === 'salary' ? '' : 'none';
+  });
+});
+
+function validateForm(){
+  const date = document.getElementById('f-date').value;
+  const desc = document.getElementById('f-desc').value.trim();
+  const amount = document.getElementById('f-amount').value;
+  const errEl = document.getElementById('formErr');
+  if(!date){ errEl.textContent = '날짜를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!desc){ errEl.textContent = '적요(지출 내용)를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!amount || Number(amount) <= 0){ errEl.textContent = '금액을 올바르게 입력하세요.'; errEl.style.display='block'; return null; }
+  errEl.style.display = 'none';
+  const vehicle = document.getElementById('f-vehicle').value;
+  let memo = document.getElementById('f-memo').value.trim();
+  if(vehicle) memo = `[${vehicle}] ${memo}`.trim();
+  return {
+    date, desc, amount: Number(amount),
+    type: document.getElementById('f-type').value,
+    category: document.getElementById('f-category').value,
+    proof: document.getElementById('f-proof').value,
+    partner: document.getElementById('f-partner').value.trim(),
+    memo,
+  };
+}
+
+async function addEntry(){
+  const entry = validateForm();
+  if(!entry) return;
+  if(entry.category === '주유비' && !document.getElementById('f-vehicle').value){
+    const errEl = document.getElementById('formErr');
+    errEl.textContent = '주유비는 차량(GV80/레이)을 선택해주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await addDoc(userCollection(uid), entry);
+    ['f-desc','f-amount','f-partner','f-memo'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-vehicle').value = '';
+    showToast('기록이 추가되었습니다');
+  }catch(e){
+    showToast('저장 중 오류가 발생했습니다');
+  }
+}
+
+document.getElementById('f-vehicle').addEventListener('change', (e) => {
+  if(e.target.value === '레이'){
+    showToast('레이는 법인 자가운전보조금 차량 — 보통 기록 안 함');
+  }
+});
+document.getElementById('addBtn').addEventListener('click', addEntry);
+document.getElementById('fabAddBtn').addEventListener('click', () => {
+  document.getElementById('f-desc').scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(() => document.getElementById('f-desc').focus(), 300);
+});
+document.getElementById('filterMonth').addEventListener('change', render);
+document.getElementById('filterType').addEventListener('change', render);
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if(expenses.length === 0){ showToast('내보낼 기록이 없습니다'); return; }
+  const rows = expenses.slice().sort((a,b)=> a.date < b.date ? -1 : 1).map((e,i) => ({
+    '번호': i+1, '날짜': e.date, '구분': e.type, '카테고리': e.category, '적요': e.desc,
+    '거래처/참석자': e.partner, '증빙종류': e.proof, '비고': e.memo, '금액': e.amount,
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:6},{wch:12},{wch:14},{wch:14},{wch:28},{wch:20},{wch:20},{wch:26},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '지출내역');
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `고문업무_지출내역_${today}.xlsx`);
+  showToast('엑셀 파일을 내려받았습니다');
+});
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  if(unsub) unsub();
+  await signOut(auth);
+});
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('s-yearmonth').value = '2026-09';
+document.getElementById('s-startdate').value = '2026-08-21';
+document.getElementById('s-enddate').value = '2026-08-31';
+document.getElementById('s-paiddate').value = '2026-09-05';
+
+// ---- 로그인 ----
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  if(!email || !pw){ errEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+  try{
+    await signInWithEmailAndPassword(auth, email, pw);
+  }catch(e){
+    errEl.textContent = '로그인에 실패했습니다. 이메일/비밀번호를 확인하세요.';
+  }
+});
+
+onAuthStateChanged(auth, (user) => {
+  if(user){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    subscribeExpenses(user.uid);
+    subscribeSalaries(user.uid);
+    calcSalaryPreview();
+  } else {
+    document.getElementById('loginScreen').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+    if(unsub) unsub();
+    if(salaryUnsub) salaryUnsub();
+    expenses = [];
+    salaries = [];
+  }
+});
+</script>
 </body>
 </html>
