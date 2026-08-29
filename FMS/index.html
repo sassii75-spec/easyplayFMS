@@ -181,7 +181,7 @@
       <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고 (목적 등)</label><input type="text" id="f-memo" list="memoList" placeholder="예: 3분기 자문 관련 논의, 법인 건 아님" autocomplete="off"><datalist id="memoList"></datalist></div>
     </div>
     <div class="grid-form3">
-      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·증빙 파일 (PDF, 이미지)</label><input type="file" id="f-receipt" accept=".pdf,image/*"></div>
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·증빙 파일 (PDF, 이미지, 여러 장 첨부 가능)</label><input type="file" id="f-receipt" accept=".pdf,image/*" multiple></div>
     </div>
     <div class="err" id="formErr"></div>
     <button class="primary" id="addBtn" style="margin-top:6px;">기록 추가</button>
@@ -247,7 +247,7 @@
       <div class="field-wrap"><label>비고</label><input type="text" id="c-memo" list="corpMemoList" placeholder="예: 전자세금계산서 발급 인증서, 부가세 매입세액공제 대상" autocomplete="off"><datalist id="corpMemoList"></datalist></div>
     </div>
     <div class="grid-form3">
-      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·세금계산서 파일 (PDF, 이미지)</label><input type="file" id="c-receipt" accept=".pdf,image/*"></div>
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·세금계산서 파일 (PDF, 이미지, 여러 장 첨부 가능)</label><input type="file" id="c-receipt" accept=".pdf,image/*" multiple></div>
     </div>
     <div class="err" id="corpFormErr"></div>
     <button class="primary" id="corpAddBtn" style="margin-top:6px;">기록 추가</button>
@@ -471,15 +471,26 @@ async function uploadReceipt(uid, file, scope){
   const sref = ref(storage, path);
   await uploadBytes(sref, file);
   const url = await getDownloadURL(sref);
-  return { receiptUrl: url, receiptName: file.name, receiptPath: path };
+  return { url, name: file.name, path };
+}
+async function uploadReceipts(uid, files, scope){
+  const list = Array.from(files || []);
+  if(list.length === 0) return [];
+  return Promise.all(list.map(f => uploadReceipt(uid, f, scope)));
+}
+function getReceiptList(e){
+  if(e.receipts && e.receipts.length) return e.receipts;
+  if(e.receiptUrl) return [{ url: e.receiptUrl, name: e.receiptName, path: e.receiptPath }];
+  return [];
 }
 
 function fmtWon(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
 function fmtMonth(dateStr){ return dateStr ? dateStr.slice(0,7) : ''; }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 function receiptLinkHtml(e){
-  if(!e.receiptUrl) return '<span style="color:var(--ink-soft);">-</span>';
-  return `<a href="${e.receiptUrl}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(e.receiptName||'첨부파일')}">📎 보기</a>`;
+  const list = getReceiptList(e);
+  if(list.length === 0) return '<span style="color:var(--ink-soft);">-</span>';
+  return list.map((r,i) => `<a href="${r.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(r.name||'첨부파일')}">📎${list.length>1 ? (i+1) : ''}</a>`).join(' ');
 }
 function statusBadgeHtml(e){
   const parts = [];
@@ -492,7 +503,7 @@ function statusBadgeHtml(e){
     parts.push(`<button class="status-toggle ${settled ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-field="settled" data-value="${settled}">${settled ? '정산완료' : '미정산'}</button>`);
   }
   if(parts.length === 0){
-    parts.push(e.receiptUrl
+    parts.push(getReceiptList(e).length > 0
       ? `<span class="status-badge status-ok">첨부됨</span>`
       : `<span class="status-badge status-none">증빙없음</span>`);
   }
@@ -561,7 +572,7 @@ function render(){
         <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="비고">${escapeHtml(e.memo || '')}</td>
         <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
-        <td><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
+        <td><button class="edit-btn" title="수정" data-id="${e.id}">✎</button><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
     `).join('');
   }
@@ -637,7 +648,7 @@ function renderCorp(){
         <td data-label="결제계좌">${escapeHtml(e.account || '')}</td>
         <td data-label="비고">${escapeHtml(e.memo || '')}</td>
         <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
-        <td><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
+        <td><button class="edit-btn" title="수정" data-id="${e.id}">✎</button><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
     `).join('');
   }
@@ -688,15 +699,17 @@ async function addCorpEntry(){
   const uid = auth.currentUser?.uid;
   if(!uid) return;
   const fileInput = document.getElementById('c-receipt');
-  const file = fileInput.files[0];
+  const files = fileInput.files;
   const btn = document.getElementById('corpAddBtn');
   const originalLabel = btn.textContent;
   try{
-    if(file){
+    if(files && files.length){
       btn.disabled = true;
-      btn.textContent = '파일 업로드 중...';
-      const receipt = await uploadReceipt(uid, file, 'corp');
-      Object.assign(entry, receipt);
+      btn.textContent = files.length > 1 ? `파일 ${files.length}개 업로드 중...` : '파일 업로드 중...';
+      const uploaded = await uploadReceipts(uid, files, 'corp');
+      entry.receipts = editingCorpId
+        ? getReceiptList(expenses.find(e => e.id === editingCorpId) || {}).concat(uploaded)
+        : uploaded;
     }
     if(editingCorpId){
       await updateDoc(doc(db, 'users', uid, 'expenses', editingCorpId), entry);
@@ -763,8 +776,10 @@ async function deleteRow(id){
   try{
     const item = expenses.find(e => e.id === id);
     await deleteDoc(doc(db, 'users', uid, 'expenses', id));
-    if(item && item.receiptPath){
-      deleteObject(ref(storage, item.receiptPath)).catch(() => {});
+    if(item){
+      getReceiptList(item).forEach(r => {
+        if(r.path) deleteObject(ref(storage, r.path)).catch(() => {});
+      });
     }
     showToast('삭제되었습니다');
   }catch(e){
@@ -967,15 +982,17 @@ async function addEntry(){
   const uid = auth.currentUser?.uid;
   if(!uid) return;
   const fileInput = document.getElementById('f-receipt');
-  const file = fileInput.files[0];
+  const files = fileInput.files;
   const btn = document.getElementById('addBtn');
   const originalLabel = btn.textContent;
   try{
-    if(file){
+    if(files && files.length){
       btn.disabled = true;
-      btn.textContent = '파일 업로드 중...';
-      const receipt = await uploadReceipt(uid, file, 'advisor');
-      Object.assign(entry, receipt);
+      btn.textContent = files.length > 1 ? `파일 ${files.length}개 업로드 중...` : '파일 업로드 중...';
+      const uploaded = await uploadReceipts(uid, files, 'advisor');
+      entry.receipts = editingId
+        ? getReceiptList(expenses.find(e => e.id === editingId) || {}).concat(uploaded)
+        : uploaded;
     }
     if(editingId){
       await updateDoc(doc(db, 'users', uid, 'expenses', editingId), entry);
