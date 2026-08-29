@@ -226,7 +226,8 @@
       <div class="field-wrap"><label>카테고리</label>
         <select id="c-category">
           <option>지급수수료</option><option>통신비</option><option>임차료</option><option>소모품비</option>
-          <option>여비교통비</option><option>접대비</option><option>광고선전비</option><option>인건비</option><option>기타</option>
+          <option>여비교통비</option><option>접대비</option><option>광고선전비</option><option>인건비</option>
+          <option>세금과공과</option><option>기타</option>
         </select>
       </div>
       <div class="field-wrap"><label>증빙종류</label>
@@ -369,6 +370,8 @@
           <div class="field-wrap"><label>대변금액 (원)</label><input type="number" id="bk-m-credit-amount" placeholder="0" min="0"></div>
           <div class="field-wrap"><label>비고</label><input type="text" id="bk-m-note" placeholder="메모"></div>
         </div>
+        <input type="hidden" id="bk-m-source-id" value="">
+        <input type="hidden" id="bk-m-source-type" value="">
         <div class="err" id="bkManualErr"></div>
         <button class="primary" id="bkSaveManualBtn" style="margin-top:6px; margin-bottom:20px;">분개 저장</button>
 
@@ -1176,6 +1179,7 @@ const EXPENSE_CATEGORY_TO_ACCOUNT = {
   "접대비": "접대비",
   "광고선전비": "광고선전비",
   "인건비": "급여",
+  "세금과공과": "세금과공과",
   "기타": "잡비",
 };
 
@@ -1327,7 +1331,7 @@ function renderBkAutoCandidates() {
         <td class="amt" data-label="금액">${fmtWon(e.debitAmount)}</td>
         <td data-label="대변계정">${e.creditAccount}</td>
         <td data-label="비고">${escapeHtml(e.note)}</td>
-        <td><button class="primary bk-confirm-btn" data-idx="${idx}" style="padding:4px 10px; font-size:11.5px;">확정</button></td>
+        <td><button class="primary bk-confirm-btn" data-idx="${idx}" style="padding:4px 10px; font-size:11.5px;">확정</button><button class="bk-edit-btn" data-idx="${idx}" style="padding:4px 10px; font-size:11.5px; margin-left:4px;">수정하여 불러오기</button></td>
       </tr>
     `).join('');
 
@@ -1337,7 +1341,39 @@ function renderBkAutoCandidates() {
         confirmAutoCandidate(pendingAutoCandidates[idx], btn);
       });
     });
+    tbody.querySelectorAll('.bk-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.getAttribute('data-idx'));
+        loadCandidateIntoManualForm(pendingAutoCandidates[idx]);
+        pendingAutoCandidates = pendingAutoCandidates.filter((c, i) => i !== idx);
+        renderBkAutoCandidates();
+      });
+    });
   }
+}
+
+function loadCandidateIntoManualForm(candidate){
+  document.getElementById('bk-m-date').value = candidate.date || '';
+  document.getElementById('bk-m-desc').value = candidate.description || '';
+  document.getElementById('bk-m-partner').value = candidate.partner || '';
+  document.getElementById('bk-m-debit-account').value = candidate.debitAccount || '';
+  document.getElementById('bk-m-debit-amount').value = candidate.debitAmount || '';
+  document.getElementById('bk-m-doctype').value = candidate.docType || '';
+  document.getElementById('bk-m-credit-account').value = candidate.creditAccount || '';
+  document.getElementById('bk-m-credit-amount').value = candidate.creditAmount || '';
+  document.getElementById('bk-m-note').value = candidate.note || '';
+  document.getElementById('bk-m-source-id').value = candidate.sourceId || '';
+  document.getElementById('bk-m-source-type').value = candidate.source || '';
+
+  document.querySelectorAll('.bk-subtab-btn').forEach(b => b.classList.remove('active'));
+  const manualTabBtn = document.querySelector('.bk-subtab-btn[data-bksub="manual"]');
+  if(manualTabBtn) manualTabBtn.classList.add('active');
+  ['auto', 'manual', 'trial', 'pl', 'bs'].forEach(key => {
+    const el = document.getElementById(`bk-sub-${key}`);
+    if(el) el.style.display = key === 'manual' ? '' : 'none';
+  });
+  document.getElementById('bk-m-debit-account').scrollIntoView({behavior:'smooth', block:'center'});
+  showToast('수동 분개 입력 화면으로 불러왔습니다. 계정과목을 고친 뒤 저장하세요.');
 }
 
 async function confirmAutoCandidate(candidate, btnElement) {
@@ -1403,6 +1439,8 @@ async function addManualBkEntry() {
   const partner = document.getElementById('bk-m-partner').value.trim();
   const docType = document.getElementById('bk-m-doctype').value.trim();
   const note = document.getElementById('bk-m-note').value.trim();
+  const sourceId = document.getElementById('bk-m-source-id').value;
+  const sourceType = document.getElementById('bk-m-source-type').value;
   const errEl = document.getElementById('bkManualErr');
 
   if (!date) { errEl.textContent = '날짜를 입력하세요.'; errEl.style.display = 'block'; return; }
@@ -1418,11 +1456,16 @@ async function addManualBkEntry() {
   try {
     await addDoc(bkCollection(uid), {
       date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
-      partner, docType, note, source: 'manual', createdAt: serverTimestamp()
+      partner, docType, note,
+      source: sourceId ? (sourceType || 'auto-edited') : 'manual',
+      sourceId: sourceId || '',
+      createdAt: serverTimestamp()
     });
     ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
       document.getElementById(id).value = '';
     });
+    document.getElementById('bk-m-source-id').value = '';
+    document.getElementById('bk-m-source-type').value = '';
     showToast('수동 분개가 저장되었습니다');
   } catch (e) {
     showToast('저장 중 오류가 발생했습니다');
