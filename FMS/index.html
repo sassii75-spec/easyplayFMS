@@ -525,6 +525,27 @@ async function toggleStatusField(id, field, current){
   if(!uid) return;
   try{
     await updateDoc(doc(db, 'users', uid, 'expenses', id), { [field]: !current });
+    if(field === 'settled' && !current){
+      const item = expenses.find(e => e.id === id);
+      const alreadyHasSettlementEntry = bkEntries.some(e => e.source === 'auto-settlement' && e.sourceId === id);
+      if(item && !alreadyHasSettlementEntry){
+        await addDoc(bkCollection(uid), {
+          date: new Date().toISOString().slice(0,10),
+          description: `${item.desc || '법인경비'} - 대표이사 정산 지급`,
+          debitAccount: '미지급금',
+          debitAmount: Number(item.amount) || 0,
+          creditAccount: '보통예금',
+          creditAmount: Number(item.amount) || 0,
+          partner: item.partner || '',
+          docType: '',
+          note: '[자동반영-정산] 대표이사 개인지출 상환',
+          source: 'auto-settlement',
+          sourceId: id,
+          createdAt: serverTimestamp(),
+        });
+        showToast('정산완료 처리 및 정산 분개가 자동 반영되었습니다');
+      }
+    }
   }catch(e){
     showToast('상태 변경 중 오류가 발생했습니다');
   }
@@ -1119,12 +1140,33 @@ document.getElementById('settlementFileInput').addEventListener('change', async 
   try{
     const uploaded = await uploadReceipts(uid, files, 'settlement');
     const item = expenses.find(x => x.id === targetId);
+    const wasSettled = !!(item && item.settled);
     const prevList = (item && item.settlementReceipts) || [];
     await updateDoc(doc(db, 'users', uid, 'expenses', targetId), {
       settlementReceipts: prevList.concat(uploaded),
       settled: true,
     });
-    showToast('이체확인증이 첨부되고 정산완료로 표시되었습니다');
+
+    const alreadyHasSettlementEntry = bkEntries.some(e => e.source === 'auto-settlement' && e.sourceId === targetId);
+    if(!wasSettled && !alreadyHasSettlementEntry && item){
+      await addDoc(bkCollection(uid), {
+        date: new Date().toISOString().slice(0,10),
+        description: `${item.desc || '법인경비'} - 대표이사 정산 지급`,
+        debitAccount: '미지급금',
+        debitAmount: Number(item.amount) || 0,
+        creditAccount: '보통예금',
+        creditAmount: Number(item.amount) || 0,
+        partner: item.partner || '',
+        docType: '이체확인증',
+        note: '[자동반영-정산] 대표이사 개인지출 상환',
+        source: 'auto-settlement',
+        sourceId: targetId,
+        createdAt: serverTimestamp(),
+      });
+      showToast('이체확인증 첨부, 정산완료 처리 및 정산 분개까지 자동 반영되었습니다');
+    } else {
+      showToast('이체확인증이 첨부되고 정산완료로 표시되었습니다');
+    }
   }catch(err){
     showToast('업로드 중 오류가 발생했습니다');
   }finally{
