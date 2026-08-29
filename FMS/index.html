@@ -429,6 +429,7 @@
 </div>
 
 <div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
+<input type="file" id="settlementFileInput" accept=".pdf,image/*" multiple style="display:none;">
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -463,6 +464,7 @@ let expenses = [];
 let unsub = null;
 let salaries = [];
 let salaryUnsub = null;
+let settlementTargetId = null;
 
 async function uploadReceipt(uid, file, scope){
   if(!file) return null;
@@ -491,6 +493,12 @@ function receiptLinkHtml(e){
   const list = getReceiptList(e);
   if(list.length === 0) return '<span style="color:var(--ink-soft);">-</span>';
   return list.map((r,i) => `<a href="${r.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(r.name||'첨부파일')}">📎${list.length>1 ? (i+1) : ''}</a>`).join(' ');
+}
+function settlementCellHtml(e){
+  if(e.account !== '대표이사 개인지출(정산대상)') return '';
+  const list = e.settlementReceipts || [];
+  const links = list.map((r,i) => `<a href="${r.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(r.name||'정산증빙')}">🏦${list.length>1 ? (i+1) : ''}</a>`).join(' ');
+  return `<div style="margin-top:4px;white-space:nowrap;">${links} <button class="settle-attach-btn" data-id="${e.id}" title="정산 이체확인증 첨부" style="background:none;border:1px solid var(--line);border-radius:12px;font-size:10.5px;padding:1px 7px;color:var(--ink-soft);cursor:pointer;">+이체확인증</button></div>`;
 }
 function statusBadgeHtml(e){
   const parts = [];
@@ -643,7 +651,7 @@ function renderCorp(){
         <td data-label="적요">${escapeHtml(e.desc)}</td>
         <td data-label="거래처">${escapeHtml(e.partner || '')}</td>
         <td data-label="증빙">${e.proof}</td>
-        <td data-label="파일">${receiptLinkHtml(e)}</td>
+        <td data-label="파일">${receiptLinkHtml(e)}${settlementCellHtml(e)}</td>
         <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="결제계좌">${escapeHtml(e.account || '')}</td>
         <td data-label="비고">${escapeHtml(e.memo || '')}</td>
@@ -654,6 +662,10 @@ function renderCorp(){
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
   tbody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => startEditCorp(btn.getAttribute('data-id'))));
+  tbody.querySelectorAll('.settle-attach-btn').forEach(btn => btn.addEventListener('click', () => {
+    settlementTargetId = btn.getAttribute('data-id');
+    document.getElementById('settlementFileInput').click();
+  }));
   tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleStatusField(btn.getAttribute('data-id'), btn.getAttribute('data-field'), btn.getAttribute('data-value') === 'true')));
   renderSummaryCorp();
 }
@@ -778,6 +790,9 @@ async function deleteRow(id){
     await deleteDoc(doc(db, 'users', uid, 'expenses', id));
     if(item){
       getReceiptList(item).forEach(r => {
+        if(r.path) deleteObject(ref(storage, r.path)).catch(() => {});
+      });
+      (item.settlementReceipts || []).forEach(r => {
         if(r.path) deleteObject(ref(storage, r.path)).catch(() => {});
       });
     }
@@ -1090,6 +1105,28 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     await signInWithEmailAndPassword(auth, email, pw);
   }catch(e){
     errEl.textContent = '로그인에 실패했습니다. 이메일/비밀번호를 확인하세요.';
+  }
+});
+
+document.getElementById('settlementFileInput').addEventListener('change', async (ev) => {
+  const files = ev.target.files;
+  const uid = auth.currentUser?.uid;
+  if(!files || !files.length || !uid || !settlementTargetId){ settlementTargetId = null; return; }
+  const targetId = settlementTargetId;
+  try{
+    const uploaded = await uploadReceipts(uid, files, 'settlement');
+    const item = expenses.find(x => x.id === targetId);
+    const prevList = (item && item.settlementReceipts) || [];
+    await updateDoc(doc(db, 'users', uid, 'expenses', targetId), {
+      settlementReceipts: prevList.concat(uploaded),
+      settled: true,
+    });
+    showToast('이체확인증이 첨부되고 정산완료로 표시되었습니다');
+  }catch(err){
+    showToast('업로드 중 오류가 발생했습니다');
+  }finally{
+    ev.target.value = '';
+    settlementTargetId = null;
   }
 });
 
