@@ -1430,45 +1430,109 @@ async function confirmAllAutoCandidates() {
 }
 
 async function addManualBkEntry() {
-  const date = document.getElementById('bk-m-date').value;
-  const desc = document.getElementById('bk-m-desc').value.trim();
-  const debitAccount = document.getElementById('bk-m-debit-account').value;
-  const debitAmount = Number(document.getElementById('bk-m-debit-amount').value) || 0;
-  const creditAccount = document.getElementById('bk-m-credit-account').value;
-  const creditAmount = Number(document.getElementById('bk-m-credit-amount').value) || 0;
-  const partner = document.getElementById('bk-m-partner').value.trim();
-  const docType = document.getElementById('bk-m-doctype').value.trim();
-  const note = document.getElementById('bk-m-note').value.trim();
-  const sourceId = document.getElementById('bk-m-source-id').value;
-  const sourceType = document.getElementById('bk-m-source-type').value;
+  const dateEl = document.getElementById('bk-m-date');
+  const descEl = document.getElementById('bk-m-desc');
+  const debitAccountEl = document.getElementById('bk-m-debit-account');
+  const debitAmountEl = document.getElementById('bk-m-debit-amount');
+  const creditAccountEl = document.getElementById('bk-m-credit-account');
+  const creditAmountEl = document.getElementById('bk-m-credit-amount');
+  const partnerEl = document.getElementById('bk-m-partner');
+  const docTypeEl = document.getElementById('bk-m-doctype');
+  const noteEl = document.getElementById('bk-m-note');
+  const sourceIdEl = document.getElementById('bk-m-source-id');
+  const sourceTypeEl = document.getElementById('bk-m-source-type');
   const errEl = document.getElementById('bkManualErr');
+  const saveBtn = document.getElementById('bkSaveManualBtn');
 
-  if (!date) { errEl.textContent = '날짜를 입력하세요.'; errEl.style.display = 'block'; return; }
-  if (!desc) { errEl.textContent = '적요를 입력하세요.'; errEl.style.display = 'block'; return; }
-  if (!debitAccount || debitAmount <= 0) { errEl.textContent = '차변 계정과 금액을 입력하세요.'; errEl.style.display = 'block'; return; }
-  if (!creditAccount || creditAmount <= 0) { errEl.textContent = '대변 계정과 금액을 입력하세요.'; errEl.style.display = 'block'; return; }
-  if (debitAmount !== creditAmount) { errEl.textContent = '차변금액과 대변금액이 일치해야 합니다.'; errEl.style.display = 'block'; return; }
+  const date = dateEl?.value || '';
+  const desc = descEl?.value?.trim() || '';
+  const debitAccount = debitAccountEl?.value || '';
+  const debitAmount = Number(debitAmountEl?.value) || 0;
+  const creditAccount = creditAccountEl?.value || '';
+  const creditAmount = Number(creditAmountEl?.value) || 0;
+  const partner = partnerEl?.value?.trim() || '';
+  const docType = docTypeEl?.value?.trim() || '';
+  const note = noteEl?.value?.trim() || '';
+  const sourceId = sourceIdEl?.value || '';
+  const sourceType = sourceTypeEl?.value || '';
 
-  errEl.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
+
+  if (!date) {
+    if (errEl) { errEl.textContent = '날짜를 입력하세요.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!desc) {
+    if (errEl) { errEl.textContent = '적요(거래 내용)를 입력하세요.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!debitAccount || debitAmount <= 0) {
+    if (errEl) { errEl.textContent = '차변 계정과 0보다 큰 금액을 입력하세요.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!creditAccount || creditAmount <= 0) {
+    if (errEl) { errEl.textContent = '대변 계정과 0보다 큰 금액을 입력하세요.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (debitAmount !== creditAmount) {
+    if (errEl) { errEl.textContent = '차변금액과 대변금액이 일치해야 합니다. (차변: ' + fmtWon(debitAmount) + ' / 대변: ' + fmtWon(creditAmount) + ')'; errEl.style.display = 'block'; }
+    return;
+  }
+
   const uid = auth.currentUser?.uid;
-  if (!uid) return;
+  if (!uid) {
+    showToast('로그인이 필요합니다');
+    return;
+  }
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = '분개 저장 중...';
+  }
 
   try {
-    await addDoc(bkCollection(uid), {
-      date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
-      partner, docType, note,
+    const entryData = {
+      date: String(date),
+      description: String(desc),
+      debitAccount: String(debitAccount),
+      debitAmount: Number(debitAmount),
+      creditAccount: String(creditAccount),
+      creditAmount: Number(creditAmount),
+      partner: String(partner),
+      docType: String(docType),
+      note: String(note),
       source: sourceId ? (sourceType || 'auto-edited') : 'manual',
-      sourceId: sourceId || '',
-      createdAt: serverTimestamp()
-    });
-    ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('bk-m-source-id').value = '';
-    document.getElementById('bk-m-source-type').value = '';
-    showToast('수동 분개가 저장되었습니다');
+      sourceId: String(sourceId || ''),
+      createdAt: serverTimestamp(),
+    };
+
+    await addDoc(bkCollection(uid), entryData);
+
+    // Reset inputs
+    if (descEl) descEl.value = '';
+    if (debitAmountEl) debitAmountEl.value = '';
+    if (creditAmountEl) creditAmountEl.value = '';
+    if (partnerEl) partnerEl.value = '';
+    if (docTypeEl) docTypeEl.value = '';
+    if (noteEl) noteEl.value = '';
+    if (sourceIdEl) sourceIdEl.value = '';
+    if (sourceTypeEl) sourceTypeEl.value = '';
+
+    showToast('수동 분개가 성공적으로 저장되었습니다');
+    renderBookkeeping();
+    loadAutoCandidates();
   } catch (e) {
-    showToast('저장 중 오류가 발생했습니다');
+    console.error('addManualBkEntry error:', e);
+    showToast('저장 중 오류가 발생했습니다: ' + (e.message || e));
+    if (errEl) {
+      errEl.textContent = '저장 실패: ' + (e.message || '오류 발생');
+      errEl.style.display = 'block';
+    }
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = '분개 저장';
+    }
   }
 }
 
