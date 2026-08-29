@@ -64,10 +64,11 @@
   .note{font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:20px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;}
   .fab-add{display:none;}
-  .tabbar{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line);}
   .tab-btn{background:none;border:none;border-radius:0;padding:10px 16px;font-size:13.5px;color:var(--ink-soft);border-bottom:2px solid transparent;margin-bottom:-1px;}
   .tab-btn.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:700;}
   .tab-btn:hover{background:none;color:var(--ink);}
+  .bk-subtab-btn{background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;}
+  .bk-subtab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600;}
   .salary-calc-box, .net-pay-box{background:#f7f5ee;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.9;}
   .salary-calc-box .row, .net-pay-box .row{display:flex;justify-content:space-between;}
   .net-pay-box{background:var(--accent-soft);font-weight:700;font-size:14.5px;}
@@ -122,7 +123,7 @@
   <div class="top">
     <div>
       <h1>FMS</h1>
-      <div class="sub">개인 사업소득(고문료) 지출관리 · 대표이사 급여관리 · Firestore 저장</div>
+      <div class="sub">개인 사업소득(고문료) 지출관리 · 대표이사 급여관리 · 복식부기 회계관리 · Firestore 저장</div>
     </div>
     <div class="actions">
       <button id="exportBtn">엑셀로 내보내기</button>
@@ -134,6 +135,7 @@
     <button class="tab-btn active" data-tab="advisor">고문경비</button>
     <button class="tab-btn" data-tab="corp">법인경비</button>
     <button class="tab-btn" data-tab="salary">급여관리</button>
+    <button class="tab-btn" data-tab="bookkeeping">복식부기</button>
   </div>
 
   <div id="tab-advisor">
@@ -305,6 +307,124 @@
       </div>
     </div>
   </div>
+
+  <div id="tab-bookkeeping" style="display:none;">
+    <div class="panel">
+      <div class="toolbar" style="margin-bottom: 16px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="bk-subtab-btn active" data-bksub="auto">자동반영 분개</button>
+          <button class="bk-subtab-btn" data-bksub="manual">수동 분개 입력</button>
+          <button class="bk-subtab-btn" data-bksub="trial">시산표</button>
+          <button class="bk-subtab-btn" data-bksub="pl">손익계산서</button>
+          <button class="bk-subtab-btn" data-bksub="bs">재무상태표</button>
+        </div>
+        <button id="bkExportCsvBtn">전체 분개 CSV 내보내기</button>
+      </div>
+
+      <!-- 서브탭 1: 자동반영 분개 -->
+      <div id="bk-sub-auto">
+        <p style="font-size:13px; color:var(--ink-soft); margin-bottom:12px;">
+          법인경비·급여관리에 입력된 내역 중 아직 분개로 확정되지 않은 건을 불러와 변환 제안합니다.
+        </p>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <button class="primary" id="bkLoadAutoBtn">기존 내역 불러오기</button>
+          <button id="bkConfirmAllAutoBtn" style="display:none;">전체 확정</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>날짜</th><th>적요</th><th>차변계정</th><th class="amt">금액</th><th>대변계정</th><th>비고</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="bkAutoRows"></tbody>
+          </table>
+          <div class="empty" id="bkAutoEmptyMsg">대기 중인 자동반영 분개건이 없습니다. '기존 내역 불러오기'를 눌러보세요.</div>
+        </div>
+      </div>
+
+      <!-- 서브탭 2: 수동 분개 입력 -->
+      <div id="bk-sub-manual" style="display:none;">
+        <h2 style="font-size:14px; margin-bottom:10px;">새 수동 분개 입력</h2>
+        <div class="grid-form">
+          <div class="field-wrap"><label>날짜</label><input type="date" id="bk-m-date"></div>
+          <div class="field-wrap"><label>적요 (거래 내용)</label><input type="text" id="bk-m-desc" placeholder="예: 3분기 자문료 매출 입금"></div>
+          <div class="field-wrap"><label>거래처</label><input type="text" id="bk-m-partner" placeholder="예: (주)OO코리아"></div>
+        </div>
+        <div class="grid-form2">
+          <div class="field-wrap"><label>차변계정</label>
+            <select id="bk-m-debit-account">
+              <option value="">선택</option>
+            </select>
+          </div>
+          <div class="field-wrap"><label>차변금액 (원)</label><input type="number" id="bk-m-debit-amount" placeholder="0" min="0"></div>
+          <div class="field-wrap"><label>증빙종류</label><input type="text" id="bk-m-doctype" placeholder="예: 세금계산서/통장입금"></div>
+        </div>
+        <div class="grid-form2">
+          <div class="field-wrap"><label>대변계정</label>
+            <select id="bk-m-credit-account">
+              <option value="">선택</option>
+            </select>
+          </div>
+          <div class="field-wrap"><label>대변금액 (원)</label><input type="number" id="bk-m-credit-amount" placeholder="0" min="0"></div>
+          <div class="field-wrap"><label>비고</label><input type="text" id="bk-m-note" placeholder="메모"></div>
+        </div>
+        <div class="err" id="bkManualErr"></div>
+        <button class="primary" id="bkSaveManualBtn" style="margin-top:6px; margin-bottom:20px;">분개 저장</button>
+
+        <h2 style="font-size:14px; margin-bottom:10px;">전체 분개장 내역</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>날짜</th><th>적요</th><th>차변계정</th><th class="amt">차변금액</th><th>대변계정</th><th class="amt">대변금액</th><th>거래처</th><th>출처</th><th>비고</th><th></th></tr>
+            </thead>
+            <tbody id="bkManualRows"></tbody>
+          </table>
+          <div class="empty" id="bkManualEmptyMsg" style="display:none;">저장된 분개 내역이 없습니다.</div>
+        </div>
+      </div>
+
+      <!-- 서브탭 3: 시산표 -->
+      <div id="bk-sub-trial" style="display:none;">
+        <h2 style="font-size:14px; margin-bottom:12px;">합계잔액시산표</h2>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>계정코드</th><th>계정과목</th><th>분류</th><th class="amt">차변합계</th><th class="amt">대변합계</th><th class="amt">차변잔액</th><th class="amt">대변잔액</th></tr>
+            </thead>
+            <tbody id="bkTrialRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 서브탭 4: 손익계산서 -->
+      <div id="bk-sub-pl" style="display:none;">
+        <h2 style="font-size:14px; margin-bottom:12px;">손익계산서</h2>
+        <div style="overflow-x:auto; max-width:600px;">
+          <table>
+            <thead>
+              <tr><th>항목</th><th class="amt">금액 (원)</th></tr>
+            </thead>
+            <tbody id="bkPlRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 서브탭 5: 재무상태표 -->
+      <div id="bk-sub-bs" style="display:none;">
+        <h2 style="font-size:14px; margin-bottom:12px;">재무상태표</h2>
+        <div style="overflow-x:auto; max-width:600px;">
+          <table>
+            <thead>
+              <tr><th>항목</th><th class="amt">금액 (원)</th></tr>
+            </thead>
+            <tbody id="bkBsRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 </div>
 
@@ -317,7 +437,7 @@ import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc
+  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getStorage, ref, uploadBytes, getDownloadURL, deleteObject
@@ -795,6 +915,20 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('tab-advisor').style.display = target === 'advisor' ? '' : 'none';
     document.getElementById('tab-corp').style.display = target === 'corp' ? '' : 'none';
     document.getElementById('tab-salary').style.display = target === 'salary' ? '' : 'none';
+    document.getElementById('tab-bookkeeping').style.display = target === 'bookkeeping' ? '' : 'none';
+  });
+});
+
+// 복식부기 서브탭 전환
+document.querySelectorAll('.bk-subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.bk-subtab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const sub = btn.getAttribute('data-bksub');
+    ['auto', 'manual', 'trial', 'pl', 'bs'].forEach(key => {
+      const el = document.getElementById(`bk-sub-${key}`);
+      if(el) el.style.display = sub === key ? '' : 'none';
+    });
   });
 });
 
@@ -939,20 +1073,416 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 
+// ============================================================================
+// 복식부기 (Bookkeeping) 모듈
+// ============================================================================
+const ACCOUNTS = [
+  { code: 101, name: "현금", type: "자산" },
+  { code: 102, name: "보통예금", type: "자산" },
+  { code: 103, name: "외상매출금", type: "자산" },
+  { code: 104, name: "미수금", type: "자산" },
+  { code: 105, name: "선급금", type: "자산" },
+  { code: 106, name: "비품", type: "자산" },
+  { code: 107, name: "소프트웨어", type: "자산" },
+  { code: 201, name: "외상매입금", type: "부채" },
+  { code: 202, name: "미지급금", type: "부채" },
+  { code: 203, name: "예수금", type: "부채" },
+  { code: 204, name: "선수금", type: "부채" },
+  { code: 205, name: "미지급세금", type: "부채" },
+  { code: 301, name: "자본금", type: "자본" },
+  { code: 302, name: "이익잉여금", type: "자본" },
+  { code: 401, name: "매출액", type: "수익" },
+  { code: 402, name: "잡이익", type: "수익" },
+  { code: 501, name: "급여", type: "비용" },
+  { code: 502, name: "복리후생비", type: "비용" },
+  { code: 503, name: "여비교통비", type: "비용" },
+  { code: 504, name: "통신비", type: "비용" },
+  { code: 505, name: "수도광열비", type: "비용" },
+  { code: 506, name: "세금과공과", type: "비용" },
+  { code: 507, name: "감가상각비", type: "비용" },
+  { code: 508, name: "지급수수료", type: "비용" },
+  { code: 509, name: "광고선전비", type: "비용" },
+  { code: 510, name: "소모품비", type: "비용" },
+  { code: 511, name: "임차료", type: "비용" },
+  { code: 512, name: "접대비", type: "비용" },
+  { code: 513, name: "외주용역비", type: "비용" },
+  { code: 514, name: "지급이자", type: "비용" },
+  { code: 515, name: "잡비", type: "비용" },
+];
+
+const EXPENSE_CATEGORY_TO_ACCOUNT = {
+  "지급수수료": "지급수수료",
+  "통신비": "통신비",
+  "임차료": "임차료",
+  "소모품비": "소모품비",
+  "여비교통비": "여비교통비",
+  "접대비": "접대비",
+  "광고선전비": "광고선전비",
+  "인건비": "급여",
+  "기타": "잡비",
+};
+
+const PAYMENT_ACCOUNT_TO_CREDIT = {
+  "법인통장": "보통예금",
+  "법인카드": "미지급금",
+  "대표이사 개인지출(정산대상)": "미지급금",
+};
+
+let bkEntries = [];
+let bkUnsub = null;
+let pendingAutoCandidates = [];
+
+function bkCollection(uid) {
+  return collection(db, 'users', uid, 'bookkeeping_entries');
+}
+
+function subscribeBookkeeping(uid) {
+  const q = query(bkCollection(uid), orderBy('date', 'asc'));
+  bkUnsub = onSnapshot(q, (snap) => {
+    bkEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderBookkeeping();
+  }, (err) => {
+    showToast('복식부기 데이터를 불러오지 못했습니다');
+    console.error(err);
+  });
+}
+
+function populateAccountSelects() {
+  const debitSel = document.getElementById('bk-m-debit-account');
+  const creditSel = document.getElementById('bk-m-credit-account');
+  if(!debitSel || !creditSel) return;
+  const opts = '<option value="">계정 선택</option>' + ACCOUNTS.map(a => `<option value="${escapeHtml(a.name)}">${a.code} - ${escapeHtml(a.name)} (${a.type})</option>`).join('');
+  debitSel.innerHTML = opts;
+  creditSel.innerHTML = opts;
+}
+
+function mapCorpExpenseToJournal(doc) {
+  const debitAccount = EXPENSE_CATEGORY_TO_ACCOUNT[doc.category] || "잡비";
+  const creditAccount = PAYMENT_ACCOUNT_TO_CREDIT[doc.account] || "보통예금";
+  return {
+    date: doc.date,
+    description: doc.desc || doc.memo || "법인경비",
+    debitAccount,
+    debitAmount: Number(doc.amount) || 0,
+    creditAccount,
+    creditAmount: Number(doc.amount) || 0,
+    partner: doc.partner || "",
+    docType: doc.proof || "",
+    note: `[자동반영-법인경비] ${doc.memo || ""}`.trim(),
+    source: "auto-corp-expense",
+    sourceId: doc.id,
+  };
+}
+
+function mapPayrollToJournal(payrollDoc) {
+  const taxableWage = Number(payrollDoc.grossTaxable) || 0;
+  const nonTaxable = Number(payrollDoc.grossNonTaxable) || 0;
+  const incomeTax = Number(payrollDoc.incomeTax) || 0;
+  const localTax = Number(payrollDoc.localTax) || 0;
+  const netPay = Number(payrollDoc.netPay) || 0;
+  const totalGross = taxableWage + nonTaxable;
+  const totalWithholding = incomeTax + localTax;
+
+  const commonNote = `[자동반영-급여] ${payrollDoc.ym || ""}`;
+  const entries = [];
+
+  if (totalWithholding > 0) {
+    entries.push({
+      date: payrollDoc.paidDate || `${payrollDoc.ym}-05`,
+      description: "급여 지급 - 원천징수",
+      debitAccount: "급여",
+      debitAmount: totalWithholding,
+      creditAccount: "예수금",
+      creditAmount: totalWithholding,
+      partner: "",
+      docType: "",
+      note: commonNote,
+      source: "auto-payroll",
+      sourceId: payrollDoc.id,
+    });
+  }
+  entries.push({
+    date: payrollDoc.paidDate || `${payrollDoc.ym}-05`,
+    description: "급여 지급 - 순지급액",
+    debitAccount: "급여",
+    debitAmount: totalGross - totalWithholding,
+    creditAccount: "보통예금",
+    creditAmount: netPay,
+    partner: "",
+    docType: "",
+    note: commonNote,
+    source: "auto-payroll",
+    sourceId: payrollDoc.id,
+  });
+  return entries;
+}
+
+function loadAutoCandidates() {
+  const alreadyLinkedIds = new Set(bkEntries.filter(e => e.sourceId).map(e => e.sourceId));
+  const corpExpenses = expenses.filter(isCorpExpense);
+
+  const candidates = [];
+  corpExpenses.forEach(doc => {
+    if (!alreadyLinkedIds.has(doc.id)) candidates.push(mapCorpExpenseToJournal(doc));
+  });
+  salaries.forEach(doc => {
+    if (!alreadyLinkedIds.has(doc.id)) candidates.push(...mapPayrollToJournal(doc));
+  });
+
+  pendingAutoCandidates = candidates;
+  renderBkAutoCandidates();
+}
+
+function renderBkAutoCandidates() {
+  const tbody = document.getElementById('bkAutoRows');
+  const emptyMsg = document.getElementById('bkAutoEmptyMsg');
+  const confirmAllBtn = document.getElementById('bkConfirmAllAutoBtn');
+
+  if(pendingAutoCandidates.length === 0) {
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    confirmAllBtn.style.display = 'none';
+  } else {
+    emptyMsg.style.display = 'none';
+    confirmAllBtn.style.display = 'inline-block';
+    tbody.innerHTML = pendingAutoCandidates.map((e, idx) => `
+      <tr>
+        <td data-label="날짜">${e.date}</td>
+        <td data-label="적요">${escapeHtml(e.description)}</td>
+        <td data-label="차변계정">${e.debitAccount}</td>
+        <td class="amt" data-label="금액">${fmtWon(e.debitAmount)}</td>
+        <td data-label="대변계정">${e.creditAccount}</td>
+        <td data-label="비고">${escapeHtml(e.note)}</td>
+        <td><button class="primary bk-confirm-btn" data-idx="${idx}" style="padding:4px 10px; font-size:11.5px;">확정</button></td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('.bk-confirm-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.getAttribute('data-idx'));
+        confirmAutoCandidate(pendingAutoCandidates[idx]);
+      });
+    });
+  }
+}
+
+async function confirmAutoCandidate(candidate) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  try {
+    await addDoc(bkCollection(uid), {
+      ...candidate,
+      createdAt: serverTimestamp()
+    });
+    pendingAutoCandidates = pendingAutoCandidates.filter(c => c !== candidate);
+    renderBkAutoCandidates();
+    showToast('분개가 확정 저장되었습니다');
+  } catch (e) {
+    showToast('저장 중 오류가 발생했습니다');
+  }
+}
+
+async function confirmAllAutoCandidates() {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  try {
+    for (const candidate of pendingAutoCandidates) {
+      await addDoc(bkCollection(uid), {
+        ...candidate,
+        createdAt: serverTimestamp()
+      });
+    }
+    pendingAutoCandidates = [];
+    renderBkAutoCandidates();
+    showToast('전체 분개가 확정 저장되었습니다');
+  } catch (e) {
+    showToast('일부 항목 저장 중 오류가 발생했습니다');
+  }
+}
+
+async function addManualBkEntry() {
+  const date = document.getElementById('bk-m-date').value;
+  const desc = document.getElementById('bk-m-desc').value.trim();
+  const debitAccount = document.getElementById('bk-m-debit-account').value;
+  const debitAmount = Number(document.getElementById('bk-m-debit-amount').value) || 0;
+  const creditAccount = document.getElementById('bk-m-credit-account').value;
+  const creditAmount = Number(document.getElementById('bk-m-credit-amount').value) || 0;
+  const partner = document.getElementById('bk-m-partner').value.trim();
+  const docType = document.getElementById('bk-m-doctype').value.trim();
+  const note = document.getElementById('bk-m-note').value.trim();
+  const errEl = document.getElementById('bkManualErr');
+
+  if (!date) { errEl.textContent = '날짜를 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (!desc) { errEl.textContent = '적요를 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (!debitAccount || debitAmount <= 0) { errEl.textContent = '차변 계정과 금액을 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (!creditAccount || creditAmount <= 0) { errEl.textContent = '대변 계정과 금액을 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (debitAmount !== creditAmount) { errEl.textContent = '차변금액과 대변금액이 일치해야 합니다.'; errEl.style.display = 'block'; return; }
+
+  errEl.style.display = 'none';
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+
+  try {
+    await addDoc(bkCollection(uid), {
+      date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
+      partner, docType, note, source: 'manual', createdAt: serverTimestamp()
+    });
+    ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    showToast('수동 분개가 저장되었습니다');
+  } catch (e) {
+    showToast('저장 중 오류가 발생했습니다');
+  }
+}
+
+async function deleteBkEntry(id) {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  try {
+    await deleteDoc(doc(db, 'users', uid, 'bookkeeping_entries', id));
+    showToast('분개 내역이 삭제되었습니다');
+  } catch (e) {
+    showToast('삭제 중 오류가 발생했습니다');
+  }
+}
+
+function computeTrialBalance(entries) {
+  const map = new Map(ACCOUNTS.map((a) => [a.name, { ...a, debitSum: 0, creditSum: 0 }]));
+  entries.forEach((e) => {
+    if (map.has(e.debitAccount)) map.get(e.debitAccount).debitSum += Number(e.debitAmount) || 0;
+    if (map.has(e.creditAccount)) map.get(e.creditAccount).creditSum += Number(e.creditAmount) || 0;
+  });
+  return Array.from(map.values()).map((a) => {
+    const debitBal = a.debitSum >= a.creditSum ? a.debitSum - a.creditSum : 0;
+    const creditBal = a.creditSum > a.debitSum ? a.creditSum - a.debitSum : 0;
+    return { ...a, debitBal, creditBal };
+  });
+}
+
+function computeIncomeStatement(trialBalance) {
+  const revenue = trialBalance.filter((a) => a.type === "수익").reduce((s, a) => s + a.creditBal, 0);
+  const expense = trialBalance.filter((a) => a.type === "비용").reduce((s, a) => s + a.debitBal, 0);
+  return { revenue, expense, netIncome: revenue - expense };
+}
+
+function computeBalanceSheet(trialBalance, netIncome) {
+  const assets = trialBalance.filter((a) => a.type === "자산").reduce((s, a) => s + a.debitBal, 0);
+  const liabilities = trialBalance.filter((a) => a.type === "부채").reduce((s, a) => s + a.creditBal, 0);
+  const capital = trialBalance.filter((a) => a.type === "자본").reduce((s, a) => s + a.creditBal, 0);
+  const totalCapital = capital + netIncome;
+  return { assets, liabilities, capital: totalCapital, balanced: assets === liabilities + totalCapital };
+}
+
+function renderBookkeeping() {
+  const tbody = document.getElementById('bkManualRows');
+  const emptyMsg = document.getElementById('bkManualEmptyMsg');
+  const sorted = bkEntries.slice().sort((a,b) => (a.date < b.date ? 1 : -1));
+
+  if (sorted.length === 0) {
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = sorted.map(e => `
+      <tr>
+        <td data-label="날짜">${e.date}</td>
+        <td data-label="적요">${escapeHtml(e.description)}</td>
+        <td data-label="차변계정">${e.debitAccount}</td>
+        <td class="amt" data-label="차변금액">${fmtWon(e.debitAmount)}</td>
+        <td data-label="대변계정">${e.creditAccount}</td>
+        <td class="amt" data-label="대변금액">${fmtWon(e.creditAmount)}</td>
+        <td data-label="거래처">${escapeHtml(e.partner || '')}</td>
+        <td data-label="출처">${e.source === 'manual' ? '수동' : e.source === 'auto-corp-expense' ? '법인경비' : e.source === 'auto-payroll' ? '급여' : ''}</td>
+        <td data-label="비고">${escapeHtml(e.note || '')}</td>
+        <td><button class="del bk-del-btn" data-bkid="${e.id}" title="삭제">✕</button></td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('.bk-del-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteBkEntry(btn.getAttribute('data-bkid')));
+    });
+  }
+
+  const trial = computeTrialBalance(bkEntries);
+  const pl = computeIncomeStatement(trial);
+  const bs = computeBalanceSheet(trial, pl.netIncome);
+
+  const trialTbody = document.getElementById('bkTrialRows');
+  const activeTrial = trial.filter(a => a.debitSum > 0 || a.creditSum > 0);
+  if (activeTrial.length === 0) {
+    trialTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-soft); padding:20px;">기록된 분개가 없습니다.</td></tr>';
+  } else {
+    trialTbody.innerHTML = activeTrial.map(a => `
+      <tr>
+        <td>${a.code}</td>
+        <td>${a.name}</td>
+        <td>${a.type}</td>
+        <td class="amt">${fmtWon(a.debitSum)}</td>
+        <td class="amt">${fmtWon(a.creditSum)}</td>
+        <td class="amt">${fmtWon(a.debitBal)}</td>
+        <td class="amt">${fmtWon(a.creditBal)}</td>
+      </tr>
+    `).join('');
+  }
+
+  const plTbody = document.getElementById('bkPlRows');
+  plTbody.innerHTML = `
+    <tr><td>수익 합계 (매출 등)</td><td class="amt">${fmtWon(pl.revenue)}</td></tr>
+    <tr><td>비용 합계 (급여·수수료·경비 등)</td><td class="amt">${fmtWon(pl.expense)}</td></tr>
+    <tr style="font-weight:700; background:var(--accent-soft);"><td>당기순이익</td><td class="amt">${fmtWon(pl.netIncome)}</td></tr>
+  `;
+
+  const bsTbody = document.getElementById('bkBsRows');
+  bsTbody.innerHTML = `
+    <tr><td>자산 합계</td><td class="amt">${fmtWon(bs.assets)}</td></tr>
+    <tr><td>부채 합계</td><td class="amt">${fmtWon(bs.liabilities)}</td></tr>
+    <tr><td>자본 합계 (당기순이익 포함)</td><td class="amt">${fmtWon(bs.capital)}</td></tr>
+    <tr style="font-weight:700;"><td>대차평형 검증</td><td class="amt" style="color:${bs.balanced ? 'var(--ink)' : 'var(--danger)'}">${bs.balanced ? '✓ 일치 (자산 = 부채 + 자본)' : '⚠ 불일치 — 분개 점검 필요'}</td></tr>
+  `;
+}
+
+function exportBkCSV() {
+  if (bkEntries.length === 0) { showToast('내보낼 분개 내역이 없습니다'); return; }
+  const headers = ["날짜", "적요", "차변계정", "차변금액", "대변계정", "대변금액", "거래처", "증빙", "비고"];
+  const rows = bkEntries.map((e) => [
+    e.date, e.description, e.debitAccount, e.debitAmount, e.creditAccount, e.creditAmount, e.partner || "", e.docType || "", e.note || "",
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `분개장_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('분개장 CSV를 내려받았습니다');
+}
+
+document.getElementById('bkLoadAutoBtn').addEventListener('click', loadAutoCandidates);
+document.getElementById('bkConfirmAllAutoBtn').addEventListener('click', confirmAllAutoCandidates);
+document.getElementById('bkSaveManualBtn').addEventListener('click', addManualBkEntry);
+document.getElementById('bkExportCsvBtn').addEventListener('click', exportBkCSV);
+
 onAuthStateChanged(auth, (user) => {
   if(user){
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     subscribeExpenses(user.uid);
     subscribeSalaries(user.uid);
+    subscribeBookkeeping(user.uid);
+    populateAccountSelects();
+    document.getElementById('bk-m-date').value = new Date().toISOString().slice(0,10);
     calcSalaryPreview();
   } else {
     document.getElementById('loginScreen').style.display = 'block';
     document.getElementById('app').style.display = 'none';
     if(unsub) unsub();
     if(salaryUnsub) salaryUnsub();
+    if(bkUnsub) bkUnsub();
     expenses = [];
     salaries = [];
+    bkEntries = [];
   }
 });
 </script>
