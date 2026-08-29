@@ -931,6 +931,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.getElementById('tab-corp').style.display = target === 'corp' ? '' : 'none';
     document.getElementById('tab-salary').style.display = target === 'salary' ? '' : 'none';
     document.getElementById('tab-bookkeeping').style.display = target === 'bookkeeping' ? '' : 'none';
+    if(target === 'bookkeeping') {
+      loadAutoCandidates();
+    }
   });
 });
 
@@ -1234,6 +1237,23 @@ function mapPayrollToJournal(payrollDoc) {
   return entries;
 }
 
+function sanitizeCandidate(candidate) {
+  return {
+    date: String(candidate.date || new Date().toISOString().slice(0, 10)),
+    description: String(candidate.description || candidate.desc || "법인경비"),
+    debitAccount: String(candidate.debitAccount || "잡비"),
+    debitAmount: Number(candidate.debitAmount) || 0,
+    creditAccount: String(candidate.creditAccount || "보통예금"),
+    creditAmount: Number(candidate.creditAmount) || 0,
+    partner: String(candidate.partner || ""),
+    docType: String(candidate.docType || candidate.proof || ""),
+    note: String(candidate.note || ""),
+    source: String(candidate.source || "auto"),
+    sourceId: String(candidate.sourceId || ""),
+    createdAt: serverTimestamp(),
+  };
+}
+
 function loadAutoCandidates() {
   const alreadyLinkedIds = new Set(bkEntries.filter(e => e.sourceId).map(e => e.sourceId));
   const corpExpenses = expenses.filter(isCorpExpense);
@@ -1277,43 +1297,62 @@ function renderBkAutoCandidates() {
     tbody.querySelectorAll('.bk-confirm-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = Number(btn.getAttribute('data-idx'));
-        confirmAutoCandidate(pendingAutoCandidates[idx]);
+        confirmAutoCandidate(pendingAutoCandidates[idx], btn);
       });
     });
   }
 }
 
-async function confirmAutoCandidate(candidate) {
+async function confirmAutoCandidate(candidate, btnElement) {
   const uid = auth.currentUser?.uid;
-  if (!uid) return;
+  if (!uid) {
+    showToast('로그인이 필요합니다');
+    return;
+  }
+  if (btnElement) {
+    btnElement.disabled = true;
+    btnElement.textContent = '저장 중...';
+  }
   try {
-    await addDoc(bkCollection(uid), {
-      ...candidate,
-      createdAt: serverTimestamp()
-    });
+    const entry = sanitizeCandidate(candidate);
+    await addDoc(bkCollection(uid), entry);
     pendingAutoCandidates = pendingAutoCandidates.filter(c => c !== candidate);
     renderBkAutoCandidates();
     showToast('분개가 확정 저장되었습니다');
   } catch (e) {
-    showToast('저장 중 오류가 발생했습니다');
+    console.error('confirmAutoCandidate error:', e);
+    showToast('저장 중 오류가 발생했습니다: ' + (e.message || e));
+    if (btnElement) {
+      btnElement.disabled = false;
+      btnElement.textContent = '확정';
+    }
   }
 }
 
 async function confirmAllAutoCandidates() {
   const uid = auth.currentUser?.uid;
   if (!uid) return;
+  const btn = document.getElementById('bkConfirmAllAutoBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '일괄 확정 중...';
+  }
   try {
-    for (const candidate of pendingAutoCandidates) {
-      await addDoc(bkCollection(uid), {
-        ...candidate,
-        createdAt: serverTimestamp()
-      });
+    for (const candidate of [...pendingAutoCandidates]) {
+      const entry = sanitizeCandidate(candidate);
+      await addDoc(bkCollection(uid), entry);
     }
     pendingAutoCandidates = [];
     renderBkAutoCandidates();
     showToast('전체 분개가 확정 저장되었습니다');
   } catch (e) {
+    console.error('confirmAllAutoCandidates error:', e);
     showToast('일부 항목 저장 중 오류가 발생했습니다');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '전체 확정';
+    }
   }
 }
 
