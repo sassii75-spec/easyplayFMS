@@ -1203,8 +1203,12 @@ function subscribeBookkeeping(uid) {
     bkEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderBookkeeping();
   }, (err) => {
-    showToast('복식부기 데이터를 불러오지 못했습니다');
-    console.error(err);
+    if(err.code === 'permission-denied' || (err.message && err.message.includes('permissions'))) {
+      showToast('Firebase 콘솔 규칙에 bookkeeping_entries 허용 설정이 필요합니다.');
+    } else {
+      showToast('복식부기 데이터를 불러오지 못했습니다');
+    }
+    console.error('subscribeBookkeeping error:', err);
   });
 }
 
