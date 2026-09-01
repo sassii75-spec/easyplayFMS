@@ -134,6 +134,7 @@
   <div class="tabbar">
     <button class="tab-btn active" data-tab="advisor">고문경비</button>
     <button class="tab-btn" data-tab="corp">법인경비</button>
+    <button class="tab-btn" data-tab="revenue">매출관리</button>
     <button class="tab-btn" data-tab="salary">급여관리</button>
     <button class="tab-btn" data-tab="bookkeeping">복식부기</button>
   </div>
@@ -270,6 +271,64 @@
       <div class="empty" id="corpEmptyMsg" style="display:none;">아직 기록된 법인경비가 없습니다.</div>
     </div>
     <div class="note">법인 통장·카드에서 직접 지출된 사업 관련 비용만 기록하세요. 대표이사 개인 자격의 고문업무 지출은 "고문경비" 탭에 별도로 기록합니다. 세금계산서는 홈택스/발급 사이트에서 "수신승인" 처리까지 마쳐야 부가세 매입세액공제에 정상 반영됩니다.</div>
+  </div>
+  </div>
+
+  <div id="tab-revenue" style="display:none;">
+  <div class="cards" id="revenueSummaryCards"></div>
+
+  <div class="panel">
+    <h2>새 매출 기록 (세금계산서 발행분)</h2>
+    <div class="grid-form">
+      <div class="field-wrap"><label>날짜 (작성일자)</label><input type="date" id="r-date"></div>
+      <div class="field-wrap"><label>거래처</label><input type="text" id="r-partner" list="revenuePartnerList" placeholder="예: 교담" autocomplete="off"><datalist id="revenuePartnerList"></datalist></div>
+      <div class="field-wrap"><label>적요</label><input type="text" id="r-desc" placeholder="예: 8월분 용역대금"></div>
+    </div>
+    <div class="grid-form2">
+      <div class="field-wrap"><label>공급가액 (원)</label><input type="number" id="r-supply" placeholder="0" min="0" step="1"></div>
+      <div class="field-wrap"><label>부가세 (원, 자동 10%)</label><input type="number" id="r-vat" placeholder="0" min="0" step="1"></div>
+      <div class="field-wrap"><label>합계금액 (원)</label><input type="text" id="r-total" disabled></div>
+    </div>
+    <div class="grid-form2">
+      <div class="field-wrap"><label>증빙종류</label>
+        <select id="r-proof">
+          <option>세금계산서</option><option>계산서</option><option>현금영수증(매출)</option><option>기타</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>입금 상태</label>
+        <select id="r-paid">
+          <option value="">미입금</option>
+          <option value="paid">입금완료</option>
+        </select>
+      </div>
+      <div class="field-wrap"><label>입금일 (입금완료 시)</label><input type="date" id="r-paiddate"></div>
+    </div>
+    <div class="grid-form3">
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고</label><input type="text" id="r-memo" list="revenueMemoList" placeholder="예: 전자세금계산서 발행분" autocomplete="off"><datalist id="revenueMemoList"></datalist></div>
+    </div>
+    <div class="grid-form3">
+      <div class="field-wrap" style="grid-column: 1 / -1;"><label>세금계산서·증빙 파일 (PDF, 이미지, 여러 장 첨부 가능)</label><input type="file" id="r-receipt" accept=".pdf,image/*" multiple></div>
+    </div>
+    <div class="err" id="revenueFormErr"></div>
+    <button class="primary" id="revenueAddBtn" style="margin-top:6px;">기록 추가</button>
+    <button id="cancelRevenueEditBtn" style="margin-top:6px;display:none;">수정 취소</button>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0;">매출 내역</h2>
+      <div class="filter-row" style="margin:0;">
+        <select id="revenueFilterMonth"></select>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>날짜</th><th>거래처</th><th>적요</th><th>공급가액</th><th>부가세</th><th>증빙</th><th>파일</th><th>입금상태</th><th>비고</th><th class="amt">합계금액</th><th></th></tr></thead>
+        <tbody id="revenueRows"></tbody>
+      </table>
+      <div class="empty" id="revenueEmptyMsg" style="display:none;">아직 기록된 매출이 없습니다.</div>
+    </div>
+    <div class="note">세금계산서 발행 시 즉시 기록하세요 (입금 전이어도 매출은 발생주의로 인식됩니다). 실제 입금이 확인되면 "+입금확인증"을 눌러 첨부하면 자동으로 입금완료 처리 및 복식부기 분개(미수금 → 보통예금)까지 반영됩니다.</div>
   </div>
   </div>
 
@@ -433,6 +492,7 @@
 
 <div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
 <input type="file" id="settlementFileInput" accept=".pdf,image/*" multiple style="display:none;">
+<input type="file" id="revenuePaymentFileInput" accept=".pdf,image/*" multiple style="display:none;">
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -826,6 +886,321 @@ async function deleteRow(id){
   }
 }
 
+// ===== 매출관리 =====
+let revenues = [];
+let revenueUnsub = null;
+let editingRevenueId = null;
+let revenuePaymentTargetId = null;
+
+function revenueCollection(uid){
+  return collection(db, 'users', uid, 'revenues');
+}
+function subscribeRevenues(uid){
+  const q = query(revenueCollection(uid), orderBy('date', 'desc'));
+  revenueUnsub = onSnapshot(q, (snap) => {
+    revenues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderRevenue();
+  }, (err) => {
+    showToast('매출 데이터를 불러오지 못했습니다');
+    console.error(err);
+  });
+}
+function populateMonthFilterRevenue(){
+  const sel = document.getElementById('revenueFilterMonth');
+  const months = Array.from(new Set(revenues.map(r => fmtMonth(r.date)))).filter(Boolean).sort().reverse();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">전체 월</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+  if(months.includes(current)) sel.value = current;
+}
+function populateHistoryListsRevenue(){
+  const partners = Array.from(new Set(revenues.map(r => (r.partner||'').trim()).filter(Boolean)));
+  const memos = Array.from(new Set(revenues.map(r => (r.memo||'').trim()).filter(Boolean)));
+  document.getElementById('revenuePartnerList').innerHTML = partners.map(p => `<option value="${escapeHtml(p)}">`).join('');
+  document.getElementById('revenueMemoList').innerHTML = memos.map(m => `<option value="${escapeHtml(m)}">`).join('');
+}
+function getFilteredRevenue(){
+  const month = document.getElementById('revenueFilterMonth').value;
+  return revenues.filter(r => !month || fmtMonth(r.date) === month);
+}
+function revenuePaidBadgeHtml(r){
+  const paid = !!r.paid;
+  return `<button class="status-toggle ${paid ? 'status-ok' : 'status-pending'}" data-rid="${r.id}" data-value="${paid}">${paid ? '입금완료' : '미입금'}</button>`;
+}
+function revenuePaymentCellHtml(r){
+  const list = r.paymentReceipts || [];
+  const links = list.map((f,i) => `<a href="${f.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(f.name||'입금확인증')}">🏦${list.length>1 ? (i+1) : ''}</a>`).join(' ');
+  return `<div style="margin-top:4px;white-space:nowrap;">${links} <button class="settle-attach-btn" data-rid="${r.id}" title="입금확인증 첨부" style="background:none;border:1px solid var(--line);border-radius:12px;font-size:10.5px;padding:1px 7px;color:var(--ink-soft);cursor:pointer;">+입금확인증</button></div>`;
+}
+function renderRevenue(){
+  populateMonthFilterRevenue();
+  populateHistoryListsRevenue();
+  const list = getFilteredRevenue().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
+  const tbody = document.getElementById('revenueRows');
+  const emptyMsg = document.getElementById('revenueEmptyMsg');
+  if(list.length === 0){
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = list.map(r => `
+      <tr>
+        <td data-label="날짜">${r.date || ''}</td>
+        <td data-label="거래처">${escapeHtml(r.partner || '')}</td>
+        <td data-label="적요">${escapeHtml(r.desc || '')}</td>
+        <td class="amt" data-label="공급가액">${fmtWon(r.supply)}</td>
+        <td class="amt" data-label="부가세">${fmtWon(r.vat)}</td>
+        <td data-label="증빙">${r.proof || ''}</td>
+        <td data-label="파일">${receiptLinkHtml({receipts:r.receipts})}${revenuePaymentCellHtml(r)}</td>
+        <td data-label="입금상태">${revenuePaidBadgeHtml(r)}</td>
+        <td data-label="비고">${escapeHtml(r.memo || '')}</td>
+        <td class="amt" data-label="합계금액">${fmtWon(r.total)}</td>
+        <td><button class="edit-btn" title="수정" data-rid="${r.id}">✎</button><button class="del" title="삭제" data-rid="${r.id}">✕</button></td>
+      </tr>
+    `).join('');
+  }
+  tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRevenueRow(btn.getAttribute('data-rid'))));
+  tbody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => startEditRevenue(btn.getAttribute('data-rid'))));
+  tbody.querySelectorAll('.status-toggle').forEach(btn => btn.addEventListener('click', () => toggleRevenuePaid(btn.getAttribute('data-rid'), btn.getAttribute('data-value') === 'true')));
+  tbody.querySelectorAll('.settle-attach-btn').forEach(btn => btn.addEventListener('click', () => {
+    revenuePaymentTargetId = btn.getAttribute('data-rid');
+    document.getElementById('revenuePaymentFileInput').click();
+  }));
+  renderSummaryRevenue();
+}
+function renderSummaryRevenue(){
+  const filtered = getFilteredRevenue();
+  const totalSupply = filtered.reduce((s,r) => s + Number(r.supply||0), 0);
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0,7);
+  const thisMonthTotal = revenues.filter(r => fmtMonth(r.date) === thisMonth).reduce((s,r) => s + Number(r.supply||0), 0);
+  const unpaid = revenues.filter(r => !r.paid).reduce((s,r) => s + Number(r.total||0), 0);
+  const cards = [
+    {label:'현재 필터 공급가액 합계', val: fmtWon(totalSupply)},
+    {label:'이번 달 매출(공급가액)', val: fmtWon(thisMonthTotal)},
+    {label:'미입금 금액', val: fmtWon(unpaid)},
+    {label:'기록 건수', val: filtered.length + '건'},
+  ];
+  document.getElementById('revenueSummaryCards').innerHTML = cards.map(c => `<div class="card"><div class="label">${c.label}</div><div class="val">${c.val}</div></div>`).join('');
+}
+function validateRevenueForm(){
+  const date = document.getElementById('r-date').value;
+  const partner = document.getElementById('r-partner').value.trim();
+  const supply = Number(document.getElementById('r-supply').value) || 0;
+  const vat = Number(document.getElementById('r-vat').value) || 0;
+  const errEl = document.getElementById('revenueFormErr');
+  if(!date){ errEl.textContent = '날짜를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!partner){ errEl.textContent = '거래처를 입력하세요.'; errEl.style.display='block'; return null; }
+  if(!supply){ errEl.textContent = '공급가액을 입력하세요.'; errEl.style.display='block'; return null; }
+  errEl.style.display = 'none';
+  const paidSelect = document.getElementById('r-paid').value;
+  return {
+    date, partner, supply, vat, total: supply + vat,
+    desc: document.getElementById('r-desc').value.trim(),
+    proof: document.getElementById('r-proof').value,
+    memo: document.getElementById('r-memo').value.trim(),
+    paid: paidSelect === 'paid',
+    paidDate: paidSelect === 'paid' ? (document.getElementById('r-paiddate').value || date) : '',
+  };
+}
+async function addRevenueEntry(){
+  const entry = validateRevenueForm();
+  if(!entry) return;
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  const fileInput = document.getElementById('r-receipt');
+  const files = fileInput.files;
+  const btn = document.getElementById('revenueAddBtn');
+  const originalLabel = btn.textContent;
+  try{
+    if(files && files.length){
+      btn.disabled = true;
+      btn.textContent = files.length > 1 ? `파일 ${files.length}개 업로드 중...` : '파일 업로드 중...';
+      const uploaded = await uploadReceipts(uid, files, 'revenue');
+      entry.receipts = editingRevenueId
+        ? (revenues.find(r => r.id === editingRevenueId)?.receipts || []).concat(uploaded)
+        : uploaded;
+    }
+    if(editingRevenueId){
+      await updateDoc(doc(db, 'users', uid, 'revenues', editingRevenueId), entry);
+      showToast('매출 기록이 수정되었습니다');
+      cancelRevenueEdit();
+    } else {
+      await addDoc(revenueCollection(uid), entry);
+      ['r-desc','r-supply','r-vat','r-partner','r-memo','r-paiddate'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('r-paid').value = '';
+      document.getElementById('r-total').value = '';
+      fileInput.value = '';
+      showToast('매출 기록이 추가되었습니다');
+    }
+  }catch(e){
+    showToast('저장 중 오류가 발생했습니다');
+  }finally{
+    btn.disabled = false;
+    if(!editingRevenueId) btn.textContent = originalLabel;
+  }
+}
+function startEditRevenue(id){
+  const item = revenues.find(r => r.id === id);
+  if(!item) return;
+  editingRevenueId = id;
+  document.getElementById('r-date').value = item.date || '';
+  document.getElementById('r-partner').value = item.partner || '';
+  document.getElementById('r-desc').value = item.desc || '';
+  document.getElementById('r-supply').value = item.supply || '';
+  document.getElementById('r-vat').value = item.vat || '';
+  document.getElementById('r-total').value = fmtWon(item.total || 0);
+  document.getElementById('r-proof').value = item.proof || '세금계산서';
+  document.getElementById('r-paid').value = item.paid ? 'paid' : '';
+  document.getElementById('r-paiddate').value = item.paidDate || '';
+  document.getElementById('r-memo').value = item.memo || '';
+  document.getElementById('revenueAddBtn').textContent = '수정 저장';
+  document.getElementById('cancelRevenueEditBtn').style.display = '';
+  document.getElementById('revenueAddBtn').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function cancelRevenueEdit(){
+  editingRevenueId = null;
+  document.getElementById('revenueAddBtn').textContent = '기록 추가';
+  document.getElementById('cancelRevenueEditBtn').style.display = 'none';
+  ['r-desc','r-supply','r-vat','r-partner','r-memo','r-paiddate'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('r-paid').value = '';
+  document.getElementById('r-total').value = '';
+  document.getElementById('r-receipt').value = '';
+}
+async function deleteRevenueRow(id){
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    const item = revenues.find(r => r.id === id);
+    await deleteDoc(doc(db, 'users', uid, 'revenues', id));
+    if(item){
+      (item.receipts || []).forEach(f => { if(f.path) deleteObject(ref(storage, f.path)).catch(() => {}); });
+      (item.paymentReceipts || []).forEach(f => { if(f.path) deleteObject(ref(storage, f.path)).catch(() => {}); });
+    }
+    showToast('삭제되었습니다');
+  }catch(e){
+    showToast('삭제 중 오류가 발생했습니다');
+  }
+}
+async function toggleRevenuePaid(id, current){
+  const uid = auth.currentUser?.uid;
+  if(!uid) return;
+  try{
+    await updateDoc(doc(db, 'users', uid, 'revenues', id), { paid: !current });
+    if(!current){
+      const item = revenues.find(r => r.id === id);
+      const already = bkEntries.some(e => e.source === 'auto-revenue-payment' && e.sourceId === id);
+      if(item && !already){
+        await addDoc(bkCollection(uid), {
+          date: new Date().toISOString().slice(0,10),
+          description: `${item.partner || '매출'} - 입금 확인`,
+          debitAccount: '보통예금',
+          debitAmount: Number(item.total) || 0,
+          creditAccount: '미수금',
+          creditAmount: Number(item.total) || 0,
+          partner: item.partner || '',
+          docType: '',
+          note: '[자동반영-매출] 입금 확인',
+          source: 'auto-revenue-payment',
+          sourceId: id,
+          createdAt: serverTimestamp(),
+        });
+      }
+    }
+  }catch(e){
+    showToast('상태 변경 중 오류가 발생했습니다');
+  }
+}
+document.getElementById('r-supply').addEventListener('input', () => {
+  const supply = Number(document.getElementById('r-supply').value) || 0;
+  document.getElementById('r-vat').value = Math.round(supply * 0.1);
+  document.getElementById('r-total').value = fmtWon(supply + Math.round(supply * 0.1));
+});
+document.getElementById('r-vat').addEventListener('input', () => {
+  const supply = Number(document.getElementById('r-supply').value) || 0;
+  const vat = Number(document.getElementById('r-vat').value) || 0;
+  document.getElementById('r-total').value = fmtWon(supply + vat);
+});
+document.getElementById('revenueAddBtn').addEventListener('click', addRevenueEntry);
+document.getElementById('cancelRevenueEditBtn').addEventListener('click', cancelRevenueEdit);
+document.getElementById('revenueFilterMonth').addEventListener('change', renderRevenue);
+document.getElementById('revenuePaymentFileInput').addEventListener('change', async (ev) => {
+  const files = ev.target.files;
+  const uid = auth.currentUser?.uid;
+  if(!files || !files.length || !uid || !revenuePaymentTargetId){ revenuePaymentTargetId = null; return; }
+  const targetId = revenuePaymentTargetId;
+  try{
+    const uploaded = await uploadReceipts(uid, files, 'revenue-payment');
+    const item = revenues.find(r => r.id === targetId);
+    const wasPaid = !!(item && item.paid);
+    const prevList = (item && item.paymentReceipts) || [];
+    await updateDoc(doc(db, 'users', uid, 'revenues', targetId), {
+      paymentReceipts: prevList.concat(uploaded),
+      paid: true,
+      paidDate: item?.paidDate || new Date().toISOString().slice(0,10),
+    });
+    const already = bkEntries.some(e => e.source === 'auto-revenue-payment' && e.sourceId === targetId);
+    if(!wasPaid && !already && item){
+      await addDoc(bkCollection(uid), {
+        date: new Date().toISOString().slice(0,10),
+        description: `${item.partner || '매출'} - 입금 확인`,
+        debitAccount: '보통예금',
+        debitAmount: Number(item.total) || 0,
+        creditAccount: '미수금',
+        creditAmount: Number(item.total) || 0,
+        partner: item.partner || '',
+        docType: '이체확인증',
+        note: '[자동반영-매출] 입금 확인',
+        source: 'auto-revenue-payment',
+        sourceId: targetId,
+        createdAt: serverTimestamp(),
+      });
+      showToast('입금확인증 첨부 및 입금완료, 정산 분개까지 자동 반영되었습니다');
+    } else {
+      showToast('입금확인증이 첨부되었습니다');
+    }
+  }catch(err){
+    showToast('업로드 중 오류가 발생했습니다');
+  }finally{
+    ev.target.value = '';
+    revenuePaymentTargetId = null;
+  }
+});
+
+function mapRevenueToJournal(doc){
+  const note = `[자동반영-매출] ${doc.memo || ''}`.trim();
+  const entries = [
+    {
+      date: doc.date,
+      description: doc.desc || `${doc.partner || ''} 매출`,
+      debitAccount: '미수금',
+      debitAmount: Number(doc.supply) || 0,
+      creditAccount: '매출액',
+      creditAmount: Number(doc.supply) || 0,
+      partner: doc.partner || '',
+      docType: doc.proof || '',
+      note,
+      source: 'auto-revenue',
+      sourceId: doc.id,
+    },
+  ];
+  if(Number(doc.vat) > 0){
+    entries.push({
+      date: doc.date,
+      description: `${doc.desc || doc.partner || '매출'} - 부가세`,
+      debitAccount: '미수금',
+      debitAmount: Number(doc.vat) || 0,
+      creditAccount: '부가세예수금',
+      creditAmount: Number(doc.vat) || 0,
+      partner: doc.partner || '',
+      docType: doc.proof || '',
+      note,
+      source: 'auto-revenue',
+      sourceId: doc.id,
+    });
+  }
+  return entries;
+}
+
 // ===== 급여관리 =====
 function salaryCollection(uid){
   return collection(db, 'users', uid, 'salaries');
@@ -968,6 +1343,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const target = btn.getAttribute('data-tab');
     document.getElementById('tab-advisor').style.display = target === 'advisor' ? '' : 'none';
     document.getElementById('tab-corp').style.display = target === 'corp' ? '' : 'none';
+    document.getElementById('tab-revenue').style.display = target === 'revenue' ? '' : 'none';
     document.getElementById('tab-salary').style.display = target === 'salary' ? '' : 'none';
     document.getElementById('tab-bookkeeping').style.display = target === 'bookkeeping' ? '' : 'none';
     if(target === 'bookkeeping') {
@@ -1191,6 +1567,7 @@ const ACCOUNTS = [
   { code: 203, name: "예수금", type: "부채" },
   { code: 204, name: "선수금", type: "부채" },
   { code: 205, name: "미지급세금", type: "부채" },
+  { code: 206, name: "부가세예수금", type: "부채" },
   { code: 301, name: "자본금", type: "자본" },
   { code: 302, name: "이익잉여금", type: "자본" },
   { code: 401, name: "매출액", type: "수익" },
@@ -1245,12 +1622,8 @@ function subscribeBookkeeping(uid) {
     bkEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderBookkeeping();
   }, (err) => {
-    if(err.code === 'permission-denied' || (err.message && err.message.includes('permissions'))) {
-      showToast('Firebase 콘솔 규칙에 bookkeeping_entries 허용 설정이 필요합니다.');
-    } else {
-      showToast('복식부기 데이터를 불러오지 못했습니다');
-    }
-    console.error('subscribeBookkeeping error:', err);
+    showToast('복식부기 데이터를 불러오지 못했습니다');
+    console.error(err);
   });
 }
 
@@ -1351,6 +1724,9 @@ function loadAutoCandidates() {
   });
   salaries.forEach(doc => {
     if (!alreadyLinkedIds.has(doc.id)) candidates.push(...mapPayrollToJournal(doc));
+  });
+  revenues.forEach(doc => {
+    if (!alreadyLinkedIds.has(doc.id)) candidates.push(...mapRevenueToJournal(doc));
   });
 
   pendingAutoCandidates = candidates;
@@ -1476,109 +1852,45 @@ async function confirmAllAutoCandidates() {
 }
 
 async function addManualBkEntry() {
-  const dateEl = document.getElementById('bk-m-date');
-  const descEl = document.getElementById('bk-m-desc');
-  const debitAccountEl = document.getElementById('bk-m-debit-account');
-  const debitAmountEl = document.getElementById('bk-m-debit-amount');
-  const creditAccountEl = document.getElementById('bk-m-credit-account');
-  const creditAmountEl = document.getElementById('bk-m-credit-amount');
-  const partnerEl = document.getElementById('bk-m-partner');
-  const docTypeEl = document.getElementById('bk-m-doctype');
-  const noteEl = document.getElementById('bk-m-note');
-  const sourceIdEl = document.getElementById('bk-m-source-id');
-  const sourceTypeEl = document.getElementById('bk-m-source-type');
+  const date = document.getElementById('bk-m-date').value;
+  const desc = document.getElementById('bk-m-desc').value.trim();
+  const debitAccount = document.getElementById('bk-m-debit-account').value;
+  const debitAmount = Number(document.getElementById('bk-m-debit-amount').value) || 0;
+  const creditAccount = document.getElementById('bk-m-credit-account').value;
+  const creditAmount = Number(document.getElementById('bk-m-credit-amount').value) || 0;
+  const partner = document.getElementById('bk-m-partner').value.trim();
+  const docType = document.getElementById('bk-m-doctype').value.trim();
+  const note = document.getElementById('bk-m-note').value.trim();
+  const sourceId = document.getElementById('bk-m-source-id').value;
+  const sourceType = document.getElementById('bk-m-source-type').value;
   const errEl = document.getElementById('bkManualErr');
-  const saveBtn = document.getElementById('bkSaveManualBtn');
 
-  const date = dateEl?.value || '';
-  const desc = descEl?.value?.trim() || '';
-  const debitAccount = debitAccountEl?.value || '';
-  const debitAmount = Number(debitAmountEl?.value) || 0;
-  const creditAccount = creditAccountEl?.value || '';
-  const creditAmount = Number(creditAmountEl?.value) || 0;
-  const partner = partnerEl?.value?.trim() || '';
-  const docType = docTypeEl?.value?.trim() || '';
-  const note = noteEl?.value?.trim() || '';
-  const sourceId = sourceIdEl?.value || '';
-  const sourceType = sourceTypeEl?.value || '';
+  if (!date) { errEl.textContent = '날짜를 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (!desc) { errEl.textContent = '적요를 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (!debitAccount || debitAmount <= 0) { errEl.textContent = '차변 계정과 금액을 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (!creditAccount || creditAmount <= 0) { errEl.textContent = '대변 계정과 금액을 입력하세요.'; errEl.style.display = 'block'; return; }
+  if (debitAmount !== creditAmount) { errEl.textContent = '차변금액과 대변금액이 일치해야 합니다.'; errEl.style.display = 'block'; return; }
 
-  if (errEl) errEl.style.display = 'none';
-
-  if (!date) {
-    if (errEl) { errEl.textContent = '날짜를 입력하세요.'; errEl.style.display = 'block'; }
-    return;
-  }
-  if (!desc) {
-    if (errEl) { errEl.textContent = '적요(거래 내용)를 입력하세요.'; errEl.style.display = 'block'; }
-    return;
-  }
-  if (!debitAccount || debitAmount <= 0) {
-    if (errEl) { errEl.textContent = '차변 계정과 0보다 큰 금액을 입력하세요.'; errEl.style.display = 'block'; }
-    return;
-  }
-  if (!creditAccount || creditAmount <= 0) {
-    if (errEl) { errEl.textContent = '대변 계정과 0보다 큰 금액을 입력하세요.'; errEl.style.display = 'block'; }
-    return;
-  }
-  if (debitAmount !== creditAmount) {
-    if (errEl) { errEl.textContent = '차변금액과 대변금액이 일치해야 합니다. (차변: ' + fmtWon(debitAmount) + ' / 대변: ' + fmtWon(creditAmount) + ')'; errEl.style.display = 'block'; }
-    return;
-  }
-
+  errEl.style.display = 'none';
   const uid = auth.currentUser?.uid;
-  if (!uid) {
-    showToast('로그인이 필요합니다');
-    return;
-  }
-
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = '분개 저장 중...';
-  }
+  if (!uid) return;
 
   try {
-    const entryData = {
-      date: String(date),
-      description: String(desc),
-      debitAccount: String(debitAccount),
-      debitAmount: Number(debitAmount),
-      creditAccount: String(creditAccount),
-      creditAmount: Number(creditAmount),
-      partner: String(partner),
-      docType: String(docType),
-      note: String(note),
+    await addDoc(bkCollection(uid), {
+      date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
+      partner, docType, note,
       source: sourceId ? (sourceType || 'auto-edited') : 'manual',
-      sourceId: String(sourceId || ''),
-      createdAt: serverTimestamp(),
-    };
-
-    await addDoc(bkCollection(uid), entryData);
-
-    // Reset inputs
-    if (descEl) descEl.value = '';
-    if (debitAmountEl) debitAmountEl.value = '';
-    if (creditAmountEl) creditAmountEl.value = '';
-    if (partnerEl) partnerEl.value = '';
-    if (docTypeEl) docTypeEl.value = '';
-    if (noteEl) noteEl.value = '';
-    if (sourceIdEl) sourceIdEl.value = '';
-    if (sourceTypeEl) sourceTypeEl.value = '';
-
-    showToast('수동 분개가 성공적으로 저장되었습니다');
-    renderBookkeeping();
-    loadAutoCandidates();
+      sourceId: sourceId || '',
+      createdAt: serverTimestamp()
+    });
+    ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('bk-m-source-id').value = '';
+    document.getElementById('bk-m-source-type').value = '';
+    showToast('수동 분개가 저장되었습니다');
   } catch (e) {
-    console.error('addManualBkEntry error:', e);
-    showToast('저장 중 오류가 발생했습니다: ' + (e.message || e));
-    if (errEl) {
-      errEl.textContent = '저장 실패: ' + (e.message || '오류 발생');
-      errEl.style.display = 'block';
-    }
-  } finally {
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = '분개 저장';
-    }
+    showToast('저장 중 오류가 발생했습니다');
   }
 }
 
@@ -1717,6 +2029,7 @@ onAuthStateChanged(auth, (user) => {
     subscribeExpenses(user.uid);
     subscribeSalaries(user.uid);
     subscribeBookkeeping(user.uid);
+    subscribeRevenues(user.uid);
     populateAccountSelects();
     document.getElementById('bk-m-date').value = new Date().toISOString().slice(0,10);
     calcSalaryPreview();
@@ -1726,9 +2039,11 @@ onAuthStateChanged(auth, (user) => {
     if(unsub) unsub();
     if(salaryUnsub) salaryUnsub();
     if(bkUnsub) bkUnsub();
+    if(revenueUnsub) revenueUnsub();
     expenses = [];
     salaries = [];
     bkEntries = [];
+    revenues = [];
   }
 });
 </script>
