@@ -69,6 +69,25 @@
   .tab-btn:hover{background:none;color:var(--ink);}
   .bk-subtab-btn{background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;}
   .bk-subtab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600;}
+  tfoot td{padding:9px 8px;border-top:2px solid var(--ink);border-bottom:none;background:var(--accent-soft);font-weight:700;}
+  tbody tr.clickable-row{cursor:pointer;}
+  tbody tr.clickable-row:hover{background:#eef0e8;}
+  tbody tr.clickable-row td:first-child{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(31,36,32,.45);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal-box{background:var(--panel);border-radius:12px;max-width:720px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.22);}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);}
+  .modal-header h3{margin:0;font-size:14.5px;}
+  .modal-header button{border:none;background:none;font-size:16px;padding:2px 6px;color:var(--ink-soft);}
+  .modal-header button:hover{color:var(--ink);}
+  .modal-body{padding:14px 18px 18px;overflow-y:auto;}
+  .recon-box{background:#f7f5ee;border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:16px;}
+  .recon-box .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;}
+  .recon-box .row.total{font-weight:700;font-size:14.5px;border-top:1px dashed var(--line);margin-top:6px;padding-top:10px;}
+  .recon-inputs{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+  .recon-inputs input{width:180px;}
+  .recon-result{margin-top:10px;font-size:13.5px;font-weight:700;padding:8px 12px;border-radius:6px;}
+  .recon-result.ok{background:var(--accent-soft);color:#27500a;}
+  .recon-result.bad{background:var(--danger-soft);color:#712b13;}
   .salary-calc-box, .net-pay-box{background:#f7f5ee;border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.9;}
   .salary-calc-box .row, .net-pay-box .row{display:flex;justify-content:space-between;}
   .net-pay-box{background:var(--accent-soft);font-weight:700;font-size:14.5px;}
@@ -95,7 +114,9 @@
     .filter-row{width:100%;}
     .filter-row select{flex:1;}
     table thead{display:none;}
-    table, tbody, tr, td{display:block;width:100%;}
+    table, tbody, tfoot, tr, td{display:block;width:100%;}
+    tfoot td{border-top:none;border-bottom:1px solid var(--line);}
+    tfoot tr:last-child td:last-child{border-bottom:none;}
     tbody tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:10px 12px;background:#fff;}
     tbody td{border:none;padding:4px 0;display:flex;justify-content:space-between;gap:10px;font-size:13px;}
     tbody td:before{content:attr(data-label);color:var(--ink-soft);font-size:11px;flex-shrink:0;padding-top:1px;}
@@ -205,6 +226,7 @@
       <table>
         <thead><tr><th>날짜</th><th>구분</th><th>카테고리</th><th>적요</th><th>거래처/참석자</th><th>증빙</th><th>파일</th><th>상태</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
+        <tfoot id="rowsFoot"></tfoot>
       </table>
       <div class="empty" id="emptyMsg" style="display:none;">아직 기록된 지출이 없습니다. 위에서 새 지출을 추가해보세요.</div>
     </div>
@@ -241,6 +263,7 @@
           <option value="법인통장">법인통장</option>
           <option value="법인카드">법인카드</option>
           <option value="대표이사 개인지출(정산대상)">대표이사 개인지출(정산대상)</option>
+          <option value="미지급(외상매입금)">미지급 - 추후 법인통장 결제 예정</option>
         </select>
       </div>
     </div>
@@ -267,6 +290,7 @@
       <table>
         <thead><tr><th>날짜</th><th>카테고리</th><th>적요</th><th>거래처</th><th>증빙</th><th>파일</th><th>상태</th><th>결제계좌</th><th>비고</th><th class="amt">금액</th><th></th></tr></thead>
         <tbody id="corpRows"></tbody>
+        <tfoot id="corpRowsFoot"></tfoot>
       </table>
       <div class="empty" id="corpEmptyMsg" style="display:none;">아직 기록된 법인경비가 없습니다.</div>
     </div>
@@ -325,6 +349,7 @@
       <table>
         <thead><tr><th>날짜</th><th>거래처</th><th>적요</th><th>공급가액</th><th>부가세</th><th>증빙</th><th>파일</th><th>입금상태</th><th>비고</th><th class="amt">합계금액</th><th></th></tr></thead>
         <tbody id="revenueRows"></tbody>
+        <tfoot id="revenueRowsFoot"></tfoot>
       </table>
       <div class="empty" id="revenueEmptyMsg" style="display:none;">아직 기록된 매출이 없습니다.</div>
     </div>
@@ -361,6 +386,7 @@
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>지급월</th><th>근무기간</th><th>근무일수</th><th>과세급여</th><th>비과세</th><th>소득세</th><th>지방세</th><th class="amt">순지급액</th><th></th></tr></thead>
+          <tfoot id="salaryRowsFoot"></tfoot>
           <tbody id="salaryRows"></tbody>
         </table>
         <div class="empty" id="salaryEmptyMsg" style="display:none;">아직 저장된 급여 기록이 없습니다.</div>
@@ -377,6 +403,7 @@
           <button class="bk-subtab-btn" data-bksub="trial">시산표</button>
           <button class="bk-subtab-btn" data-bksub="pl">손익계산서</button>
           <button class="bk-subtab-btn" data-bksub="bs">재무상태표</button>
+          <button class="bk-subtab-btn" data-bksub="bank">은행원장(통장대조)</button>
         </div>
         <button id="bkExportCsvBtn">전체 분개 CSV 내보내기</button>
       </div>
@@ -398,6 +425,7 @@
               </tr>
             </thead>
             <tbody id="bkAutoRows"></tbody>
+            <tfoot id="bkAutoRowsFoot"></tfoot>
           </table>
           <div class="empty" id="bkAutoEmptyMsg">대기 중인 자동반영 분개건이 없습니다. '기존 내역 불러오기'를 눌러보세요.</div>
         </div>
@@ -441,6 +469,7 @@
               <tr><th>날짜</th><th>적요</th><th>차변계정</th><th class="amt">차변금액</th><th>대변계정</th><th class="amt">대변금액</th><th>거래처</th><th>출처</th><th>비고</th><th></th></tr>
             </thead>
             <tbody id="bkManualRows"></tbody>
+            <tfoot id="bkManualRowsFoot"></tfoot>
           </table>
           <div class="empty" id="bkManualEmptyMsg" style="display:none;">저장된 분개 내역이 없습니다.</div>
         </div>
@@ -485,9 +514,47 @@
         </div>
       </div>
 
+      <!-- 서브탭 6: 은행원장 (통장 대조) -->
+      <div id="bk-sub-bank" style="display:none;">
+        <h2 style="font-size:14px; margin-bottom:12px;">은행원장 (보통예금 흐름 / 통장 잔액 대조)</h2>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">
+          분개장에서 "보통예금" 계정이 차변(입금) 또는 대변(출금)으로 잡힌 건만 날짜순으로 모아 잔액을 누적 계산합니다. 실제 통장(뱅킹앱) 잔액을 아래에 입력하면 계산상 잔액과 바로 대조됩니다.
+        </p>
+        <div class="recon-box">
+          <div class="row"><span>분개 기준 계산상 잔액 (마지막 거래 기준)</span><strong id="bkBankComputedBal">0원</strong></div>
+          <div class="row"><span>마지막 반영 거래일</span><span id="bkBankLastDate">-</span></div>
+          <div class="recon-inputs">
+            <input type="number" id="bkBankActualInput" placeholder="실제 통장 잔액 입력">
+            <button class="primary" id="bkBankCheckBtn">대조하기</button>
+          </div>
+          <div id="bkBankReconResult" style="display:none;"></div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr><th>날짜</th><th>적요</th><th>거래처</th><th class="amt">입금(+)</th><th class="amt">출금(-)</th><th class="amt">누적 잔액</th><th>비고</th></tr>
+            </thead>
+            <tbody id="bkBankRows"></tbody>
+            <tfoot id="bkBankRowsFoot"></tfoot>
+          </table>
+          <div class="empty" id="bkBankEmptyMsg" style="display:none;">보통예금 관련 분개 내역이 없습니다.</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
+</div>
+
+<!-- 계정/항목 클릭 시 상세 분개 내역을 보여주는 공통 모달 -->
+<div class="modal-overlay" id="detailModalOverlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="detailModalTitle">상세 내역</h3>
+      <button id="detailModalClose" title="닫기">✕</button>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+  </div>
 </div>
 
 <div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
@@ -557,11 +624,15 @@ function receiptLinkHtml(e){
   if(list.length === 0) return '<span style="color:var(--ink-soft);">-</span>';
   return list.map((r,i) => `<a href="${r.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(r.name||'첨부파일')}">📎${list.length>1 ? (i+1) : ''}</a>`).join(' ');
 }
+function isSettlableAccount(account){
+  return account === '대표이사 개인지출(정산대상)' || account === '미지급(외상매입금)' || account === '법인카드';
+}
 function settlementCellHtml(e){
-  if(e.account !== '대표이사 개인지출(정산대상)') return '';
+  if(!isSettlableAccount(e.account)) return '';
   const list = e.settlementReceipts || [];
-  const links = list.map((r,i) => `<a href="${r.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(r.name||'정산증빙')}">🏦${list.length>1 ? (i+1) : ''}</a>`).join(' ');
-  return `<div style="margin-top:4px;white-space:nowrap;">${links} <button class="settle-attach-btn" data-id="${e.id}" title="정산 이체확인증 첨부" style="background:none;border:1px solid var(--line);border-radius:12px;font-size:10.5px;padding:1px 7px;color:var(--ink-soft);cursor:pointer;">+이체확인증</button></div>`;
+  const label = e.account === '미지급(외상매입금)' ? '지급확인증' : e.account === '법인카드' ? '카드출금확인' : '이체확인증';
+  const links = list.map((r,i) => `<a href="${r.url}" target="_blank" rel="noopener" class="receipt-link" title="${escapeHtml(r.name||label)}">🏦${list.length>1 ? (i+1) : ''}</a>`).join(' ');
+  return `<div style="margin-top:4px;white-space:nowrap;">${links} <button class="settle-attach-btn" data-id="${e.id}" title="${label} 첨부" style="background:none;border:1px solid var(--line);border-radius:12px;font-size:10.5px;padding:1px 7px;color:var(--ink-soft);cursor:pointer;">+${label}</button></div>`;
 }
 function statusBadgeHtml(e){
   const parts = [];
@@ -569,9 +640,12 @@ function statusBadgeHtml(e){
     const approved = !!e.approved;
     parts.push(`<button class="status-toggle ${approved ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-field="approved" data-value="${approved}">${approved ? '승인완료' : '미승인'}</button>`);
   }
-  if(e.account === '대표이사 개인지출(정산대상)'){
+  if(isSettlableAccount(e.account)){
     const settled = !!e.settled;
-    parts.push(`<button class="status-toggle ${settled ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-field="settled" data-value="${settled}">${settled ? '정산완료' : '미정산'}</button>`);
+    const [onLabel, offLabel] = e.account === '미지급(외상매입금)' ? ['지급완료', '미지급']
+      : e.account === '법인카드' ? ['정산완료(카드출금확인)', '카드출금 미확인']
+      : ['정산완료', '미정산'];
+    parts.push(`<button class="status-toggle ${settled ? 'status-ok' : 'status-pending'}" data-id="${e.id}" data-field="settled" data-value="${settled}">${settled ? onLabel : offLabel}</button>`);
   }
   if(parts.length === 0){
     parts.push(getReceiptList(e).length > 0
@@ -589,21 +663,22 @@ async function toggleStatusField(id, field, current){
       const item = expenses.find(e => e.id === id);
       const alreadyHasSettlementEntry = bkEntries.some(e => e.source === 'auto-settlement' && e.sourceId === id);
       if(item && !alreadyHasSettlementEntry){
+        const liabilityAccount = PAYMENT_ACCOUNT_TO_CREDIT[item.account] || '미지급금';
         await addDoc(bkCollection(uid), {
           date: new Date().toISOString().slice(0,10),
-          description: `${item.desc || '법인경비'} - 대표이사 정산 지급`,
-          debitAccount: '미지급금',
+          description: `${item.desc || '법인경비'} - ${item.account === '미지급(외상매입금)' ? '거래처 지급' : '대표이사 정산 지급'}`,
+          debitAccount: liabilityAccount,
           debitAmount: Number(item.amount) || 0,
           creditAccount: '보통예금',
           creditAmount: Number(item.amount) || 0,
           partner: item.partner || '',
           docType: '',
-          note: '[자동반영-정산] 대표이사 개인지출 상환',
+          note: item.account === '미지급(외상매입금)' ? '[자동반영-정산] 외상매입금 지급' : '[자동반영-정산] 대표이사 개인지출 상환',
           source: 'auto-settlement',
           sourceId: id,
           createdAt: serverTimestamp(),
         });
-        showToast('정산완료 처리 및 정산 분개가 자동 반영되었습니다');
+        showToast('처리 완료 및 지급 분개가 자동 반영되었습니다');
       }
     }
   }catch(e){
@@ -647,9 +722,11 @@ function render(){
   const list = getFiltered().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
   const tbody = document.getElementById('rows');
   const emptyMsg = document.getElementById('emptyMsg');
+  const foot = document.getElementById('rowsFoot');
   if(list.length === 0){
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
+    foot.innerHTML = '';
   } else {
     emptyMsg.style.display = 'none';
     tbody.innerHTML = list.map(e => `
@@ -667,6 +744,8 @@ function render(){
         <td><button class="edit-btn" title="수정" data-id="${e.id}">✎</button><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
     `).join('');
+    const total = list.reduce((s,e) => s + (Number(e.amount)||0), 0);
+    foot.innerHTML = `<tr><td colspan="9" data-label="">합계 (${list.length}건)</td><td class="amt" data-label="합계">${fmtWon(total)}</td><td data-label=""></td></tr>`;
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
   tbody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => startEdit(btn.getAttribute('data-id'))));
@@ -723,9 +802,11 @@ function renderCorp(){
   const list = getFilteredCorp().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
   const tbody = document.getElementById('corpRows');
   const emptyMsg = document.getElementById('corpEmptyMsg');
+  const foot = document.getElementById('corpRowsFoot');
   if(list.length === 0){
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
+    foot.innerHTML = '';
   } else {
     emptyMsg.style.display = 'none';
     tbody.innerHTML = list.map(e => `
@@ -743,6 +824,8 @@ function renderCorp(){
         <td><button class="edit-btn" title="수정" data-id="${e.id}">✎</button><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
     `).join('');
+    const total = list.reduce((s,e) => s + (Number(e.amount)||0), 0);
+    foot.innerHTML = `<tr><td colspan="9" data-label="">합계 (${list.length}건)</td><td class="amt" data-label="합계">${fmtWon(total)}</td><td data-label=""></td></tr>`;
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRow(btn.getAttribute('data-id'))));
   tbody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => startEditCorp(btn.getAttribute('data-id'))));
@@ -760,7 +843,7 @@ function renderSummaryCorp(){
   const now = new Date();
   const thisMonth = now.toISOString().slice(0,7);
   const thisMonthTotal = expenses.filter(e => isCorpExpense(e) && fmtMonth(e.date) === thisMonth).reduce((s,e) => s + Number(e.amount||0), 0);
-  const unsettled = expenses.filter(e => isCorpExpense(e) && e.account === '대표이사 개인지출(정산대상)' && !e.settled).reduce((s,e) => s + Number(e.amount||0), 0);
+  const unsettled = expenses.filter(e => isCorpExpense(e) && isSettlableAccount(e.account) && !e.settled).reduce((s,e) => s + Number(e.amount||0), 0);
   const cards = [
     {label:'현재 필터 합계', val: fmtWon(total)},
     {label:'이번 달 법인경비', val: fmtWon(thisMonthTotal)},
@@ -937,9 +1020,11 @@ function renderRevenue(){
   const list = getFilteredRevenue().slice().sort((a,b) => (a.date < b.date ? 1 : -1));
   const tbody = document.getElementById('revenueRows');
   const emptyMsg = document.getElementById('revenueEmptyMsg');
+  const foot = document.getElementById('revenueRowsFoot');
   if(list.length === 0){
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
+    foot.innerHTML = '';
   } else {
     emptyMsg.style.display = 'none';
     tbody.innerHTML = list.map(r => `
@@ -957,6 +1042,17 @@ function renderRevenue(){
         <td><button class="edit-btn" title="수정" data-rid="${r.id}">✎</button><button class="del" title="삭제" data-rid="${r.id}">✕</button></td>
       </tr>
     `).join('');
+    const totalSupply = list.reduce((s,r) => s + (Number(r.supply)||0), 0);
+    const totalVat = list.reduce((s,r) => s + (Number(r.vat)||0), 0);
+    const totalAmount = list.reduce((s,r) => s + (Number(r.total)||0), 0);
+    foot.innerHTML = `<tr>
+      <td colspan="3" data-label="">합계 (${list.length}건)</td>
+      <td class="amt" data-label="공급가액 합계">${fmtWon(totalSupply)}</td>
+      <td class="amt" data-label="부가세 합계">${fmtWon(totalVat)}</td>
+      <td colspan="4" data-label=""></td>
+      <td class="amt" data-label="합계금액 총계">${fmtWon(totalAmount)}</td>
+      <td data-label=""></td>
+    </tr>`;
   }
   tbody.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', () => deleteRevenueRow(btn.getAttribute('data-rid'))));
   tbody.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => startEditRevenue(btn.getAttribute('data-rid'))));
@@ -1292,9 +1388,11 @@ function renderSalaryTable(){
   const tbody = document.getElementById('salaryRows');
   const emptyMsg = document.getElementById('salaryEmptyMsg');
   const sorted = salaries.slice().sort((a,b) => a.ym < b.ym ? 1 : -1);
+  const foot = document.getElementById('salaryRowsFoot');
   if(sorted.length === 0){
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
+    foot.innerHTML = '';
     return;
   }
   emptyMsg.style.display = 'none';
@@ -1312,6 +1410,17 @@ function renderSalaryTable(){
     </tr>
   `).join('');
   document.querySelectorAll('[data-sid]').forEach(btn => btn.addEventListener('click', () => deleteSalaryRow(btn.getAttribute('data-sid'))));
+
+  const sum = (key) => sorted.reduce((s,x) => s + (Number(x[key])||0), 0);
+  foot.innerHTML = `<tr>
+    <td colspan="3" data-label="">합계 (${sorted.length}건)</td>
+    <td data-label="과세급여 합계">${fmtWon(sum('grossTaxable'))}</td>
+    <td data-label="비과세 합계">${fmtWon(sum('grossNonTaxable'))}</td>
+    <td data-label="소득세 합계">${fmtWon(sum('incomeTax'))}</td>
+    <td data-label="지방세 합계">${fmtWon(sum('localTax'))}</td>
+    <td class="amt" data-label="순지급액 합계">${fmtWon(sum('netPay'))}</td>
+    <td data-label=""></td>
+  </tr>`;
 }
 
 ['s-yearmonth','s-startdate','s-enddate','s-base','s-meal','s-driving','s-incometax'].forEach(id => {
@@ -1358,11 +1467,26 @@ document.querySelectorAll('.bk-subtab-btn').forEach(btn => {
     document.querySelectorAll('.bk-subtab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const sub = btn.getAttribute('data-bksub');
-    ['auto', 'manual', 'trial', 'pl', 'bs'].forEach(key => {
+    ['auto', 'manual', 'trial', 'pl', 'bs', 'bank'].forEach(key => {
       const el = document.getElementById(`bk-sub-${key}`);
       if(el) el.style.display = sub === key ? '' : 'none';
     });
   });
+});
+
+// 상세내역 모달 닫기
+document.getElementById('detailModalClose').addEventListener('click', closeDetailModal);
+document.getElementById('detailModalOverlay').addEventListener('click', (e) => {
+  if (e.target.id === 'detailModalOverlay') closeDetailModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDetailModal();
+});
+
+// 은행원장 통장 잔액 대조
+document.getElementById('bkBankCheckBtn').addEventListener('click', () => runBankReconciliation(true));
+document.getElementById('bkBankActualInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runBankReconciliation(true);
 });
 
 function validateForm(){
@@ -1525,16 +1649,17 @@ document.getElementById('settlementFileInput').addEventListener('change', async 
 
     const alreadyHasSettlementEntry = bkEntries.some(e => e.source === 'auto-settlement' && e.sourceId === targetId);
     if(!wasSettled && !alreadyHasSettlementEntry && item){
+      const liabilityAccount = PAYMENT_ACCOUNT_TO_CREDIT[item.account] || '미지급금';
       await addDoc(bkCollection(uid), {
         date: new Date().toISOString().slice(0,10),
-        description: `${item.desc || '법인경비'} - 대표이사 정산 지급`,
-        debitAccount: '미지급금',
+        description: `${item.desc || '법인경비'} - ${item.account === '미지급(외상매입금)' ? '거래처 지급' : '대표이사 정산 지급'}`,
+        debitAccount: liabilityAccount,
         debitAmount: Number(item.amount) || 0,
         creditAccount: '보통예금',
         creditAmount: Number(item.amount) || 0,
         partner: item.partner || '',
-        docType: '이체확인증',
-        note: '[자동반영-정산] 대표이사 개인지출 상환',
+        docType: item.account === '미지급(외상매입금)' ? '지급확인증' : '이체확인증',
+        note: item.account === '미지급(외상매입금)' ? '[자동반영-정산] 외상매입금 지급' : '[자동반영-정산] 대표이사 개인지출 상환',
         source: 'auto-settlement',
         sourceId: targetId,
         createdAt: serverTimestamp(),
@@ -1606,6 +1731,7 @@ const PAYMENT_ACCOUNT_TO_CREDIT = {
   "법인통장": "보통예금",
   "법인카드": "미지급금",
   "대표이사 개인지출(정산대상)": "미지급금",
+  "미지급(외상매입금)": "외상매입금",
 };
 
 let bkEntries = [];
@@ -1737,11 +1863,13 @@ function renderBkAutoCandidates() {
   const tbody = document.getElementById('bkAutoRows');
   const emptyMsg = document.getElementById('bkAutoEmptyMsg');
   const confirmAllBtn = document.getElementById('bkConfirmAllAutoBtn');
+  const foot = document.getElementById('bkAutoRowsFoot');
 
   if(pendingAutoCandidates.length === 0) {
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
     confirmAllBtn.style.display = 'none';
+    foot.innerHTML = '';
   } else {
     emptyMsg.style.display = 'none';
     confirmAllBtn.style.display = 'inline-block';
@@ -1756,6 +1884,8 @@ function renderBkAutoCandidates() {
         <td><button class="primary bk-confirm-btn" data-idx="${idx}" style="padding:4px 10px; font-size:11.5px;">확정</button><button class="bk-edit-btn" data-idx="${idx}" style="padding:4px 10px; font-size:11.5px; margin-left:4px;">수정하여 불러오기</button></td>
       </tr>
     `).join('');
+    const total = pendingAutoCandidates.reduce((s,e) => s + (Number(e.debitAmount)||0), 0);
+    foot.innerHTML = `<tr><td colspan="3" data-label="">합계 (${pendingAutoCandidates.length}건, 대기중)</td><td class="amt" data-label="합계">${fmtWon(total)}</td><td colspan="2" data-label=""></td></tr>`;
 
     tbody.querySelectorAll('.bk-confirm-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1790,7 +1920,7 @@ function loadCandidateIntoManualForm(candidate){
   document.querySelectorAll('.bk-subtab-btn').forEach(b => b.classList.remove('active'));
   const manualTabBtn = document.querySelector('.bk-subtab-btn[data-bksub="manual"]');
   if(manualTabBtn) manualTabBtn.classList.add('active');
-  ['auto', 'manual', 'trial', 'pl', 'bs'].forEach(key => {
+  ['auto', 'manual', 'trial', 'pl', 'bs', 'bank'].forEach(key => {
     const el = document.getElementById(`bk-sub-${key}`);
     if(el) el.style.display = key === 'manual' ? '' : 'none';
   });
@@ -1932,14 +2062,180 @@ function computeBalanceSheet(trialBalance, netIncome) {
   return { assets, liabilities, capital: totalCapital, balanced: assets === liabilities + totalCapital };
 }
 
+function getAccountTypeMap() {
+  return Object.fromEntries(ACCOUNTS.map((a) => [a.name, a.type]));
+}
+
+function showEntriesModal(title, rows) {
+  const body = document.getElementById('detailModalBody');
+  if (!rows || rows.length === 0) {
+    body.innerHTML = '<div class="empty">관련 분개 내역이 없습니다.</div>';
+  } else {
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    body.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>날짜</th><th>적요</th><th>거래처</th><th>구분</th><th class="amt">금액</th><th>비고</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td data-label="날짜">${r.date}</td>
+                <td data-label="적요">${escapeHtml(r.description || '')}</td>
+                <td data-label="거래처">${escapeHtml(r.partner || '')}</td>
+                <td data-label="구분">${r.side}</td>
+                <td class="amt" data-label="금액">${fmtWon(r.amount)}</td>
+                <td data-label="비고">${escapeHtml(r.note || '')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot><tr style="font-weight:700;"><td colspan="4" data-label="">합계</td><td class="amt" data-label="">${fmtWon(total)}</td><td data-label=""></td></tr></tfoot>
+        </table>
+      </div>`;
+  }
+  document.getElementById('detailModalTitle').textContent = title;
+  document.getElementById('detailModalOverlay').style.display = 'flex';
+}
+
+function closeDetailModal() {
+  document.getElementById('detailModalOverlay').style.display = 'none';
+}
+
+function showAccountDetail(accountName) {
+  const rows = bkEntries
+    .filter((e) => e.debitAccount === accountName || e.creditAccount === accountName)
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .map((e) => {
+      const isDebit = e.debitAccount === accountName;
+      return {
+        date: e.date, description: e.description, partner: e.partner,
+        side: isDebit ? '차변' : '대변',
+        amount: isDebit ? Number(e.debitAmount) || 0 : Number(e.creditAmount) || 0,
+        note: e.note,
+      };
+    });
+  showEntriesModal(`${accountName} — 관련 분개 내역`, rows);
+}
+
+function showTypeDetail(type, title) {
+  const typeMap = getAccountTypeMap();
+  const rows = bkEntries
+    .filter((e) => typeMap[e.debitAccount] === type || typeMap[e.creditAccount] === type)
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    .map((e) => {
+      const debitMatches = typeMap[e.debitAccount] === type;
+      return {
+        date: e.date, description: e.description, partner: e.partner,
+        side: debitMatches ? `차변 (${e.debitAccount})` : `대변 (${e.creditAccount})`,
+        amount: debitMatches ? Number(e.debitAmount) || 0 : Number(e.creditAmount) || 0,
+        note: e.note,
+      };
+    });
+  showEntriesModal(title, rows);
+}
+
+const BANK_CASH_ACCOUNTS = ['보통예금'];
+
+function computeBankLedger(entries) {
+  const filtered = entries
+    .filter((e) => BANK_CASH_ACCOUNTS.includes(e.debitAccount) || BANK_CASH_ACCOUNTS.includes(e.creditAccount))
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  let balance = 0;
+  return filtered.map((e) => {
+    const inflow = BANK_CASH_ACCOUNTS.includes(e.debitAccount) ? Number(e.debitAmount) || 0 : 0;
+    const outflow = BANK_CASH_ACCOUNTS.includes(e.creditAccount) ? Number(e.creditAmount) || 0 : 0;
+    balance += inflow - outflow;
+    return { date: e.date, description: e.description, partner: e.partner, inflow, outflow, balance, note: e.note };
+  });
+}
+
+function renderBankLedger() {
+  const ledger = computeBankLedger(bkEntries);
+  const tbody = document.getElementById('bkBankRows');
+  const emptyMsg = document.getElementById('bkBankEmptyMsg');
+  const foot = document.getElementById('bkBankRowsFoot');
+  if (ledger.length === 0) {
+    tbody.innerHTML = '';
+    emptyMsg.style.display = 'block';
+    foot.innerHTML = '';
+  } else {
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = ledger.map(r => `
+      <tr>
+        <td data-label="날짜">${r.date}</td>
+        <td data-label="적요">${escapeHtml(r.description || '')}</td>
+        <td data-label="거래처">${escapeHtml(r.partner || '')}</td>
+        <td class="amt" data-label="입금(+)">${r.inflow ? fmtWon(r.inflow) : ''}</td>
+        <td class="amt" data-label="출금(-)">${r.outflow ? fmtWon(r.outflow) : ''}</td>
+        <td class="amt" data-label="누적 잔액">${fmtWon(r.balance)}</td>
+        <td data-label="비고">${escapeHtml(r.note || '')}</td>
+      </tr>
+    `).join('');
+    const totalIn = ledger.reduce((s,r) => s + r.inflow, 0);
+    const totalOut = ledger.reduce((s,r) => s + r.outflow, 0);
+    const finalBal = ledger[ledger.length - 1].balance;
+    foot.innerHTML = `<tr>
+      <td colspan="3" data-label="">합계 (${ledger.length}건)</td>
+      <td class="amt" data-label="입금 총액">${fmtWon(totalIn)}</td>
+      <td class="amt" data-label="출금 총액">${fmtWon(totalOut)}</td>
+      <td class="amt" data-label="최종 잔액">${fmtWon(finalBal)}</td>
+      <td data-label=""></td>
+    </tr>`;
+  }
+
+  const computedBal = ledger.length ? ledger[ledger.length - 1].balance : 0;
+  const lastDate = ledger.length ? ledger[ledger.length - 1].date : '-';
+  document.getElementById('bkBankComputedBal').textContent = fmtWon(computedBal);
+  document.getElementById('bkBankLastDate').textContent = lastDate;
+
+  // 마지막으로 대조했던 실제 잔액이 있으면 입력창에 복원 (참고용, 기기별 로컬 저장)
+  try {
+    const savedActual = localStorage.getItem('fms_bank_actual_balance');
+    const actualInput = document.getElementById('bkBankActualInput');
+    if (savedActual && actualInput && !actualInput.value) actualInput.value = savedActual;
+  } catch (e) { /* localStorage 접근 불가 시 무시 */ }
+
+  runBankReconciliation(false);
+}
+
+function runBankReconciliation(showToastOnOk) {
+  const resultEl = document.getElementById('bkBankReconResult');
+  const actualInput = document.getElementById('bkBankActualInput');
+  const raw = actualInput.value;
+  if (raw === '' || raw === null) { resultEl.style.display = 'none'; return; }
+  const actual = Number(raw) || 0;
+  const ledger = computeBankLedger(bkEntries);
+  const computed = ledger.length ? ledger[ledger.length - 1].balance : 0;
+  const diff = actual - computed;
+
+  try { localStorage.setItem('fms_bank_actual_balance', String(actual)); } catch (e) { /* 무시 */ }
+
+  resultEl.style.display = 'block';
+  if (diff === 0) {
+    resultEl.className = 'recon-result ok';
+    resultEl.textContent = `✓ 일치합니다. 실제 통장 잔액과 분개 기준 계산상 잔액이 정확히 맞습니다 (${fmtWon(actual)}).`;
+    if (showToastOnOk) showToast('통장 잔액이 정확히 일치합니다');
+  } else {
+    resultEl.className = 'recon-result bad';
+    const diffAbs = fmtWon(Math.abs(diff));
+    resultEl.textContent = diff > 0
+      ? `⚠ 실제 잔액이 계산상 잔액보다 ${diffAbs} 더 많습니다. 아직 분개장에 반영 안 된 입금(또는 누락된 지출 취소)이 있는지 확인해보세요.`
+      : `⚠ 실제 잔액이 계산상 잔액보다 ${diffAbs} 적습니다. 아직 분개장에 반영 안 된 출금(수수료, 이자 등)이 있는지 확인해보세요.`;
+  }
+}
+
 function renderBookkeeping() {
   const tbody = document.getElementById('bkManualRows');
   const emptyMsg = document.getElementById('bkManualEmptyMsg');
+  const bkFoot = document.getElementById('bkManualRowsFoot');
   const sorted = bkEntries.slice().sort((a,b) => (a.date < b.date ? 1 : -1));
 
   if (sorted.length === 0) {
     tbody.innerHTML = '';
     emptyMsg.style.display = 'block';
+    bkFoot.innerHTML = '';
   } else {
     emptyMsg.style.display = 'none';
     tbody.innerHTML = sorted.map(e => `
@@ -1960,6 +2256,17 @@ function renderBookkeeping() {
     tbody.querySelectorAll('.bk-del-btn').forEach(btn => {
       btn.addEventListener('click', () => deleteBkEntry(btn.getAttribute('data-bkid')));
     });
+
+    const totalDebit = sorted.reduce((s,e) => s + (Number(e.debitAmount)||0), 0);
+    const totalCredit = sorted.reduce((s,e) => s + (Number(e.creditAmount)||0), 0);
+    bkFoot.innerHTML = `<tr>
+      <td colspan="2" data-label="">합계 (${sorted.length}건)</td>
+      <td data-label=""></td>
+      <td class="amt" data-label="차변 합계">${fmtWon(totalDebit)}</td>
+      <td data-label=""></td>
+      <td class="amt" data-label="대변 합계">${fmtWon(totalCredit)}</td>
+      <td colspan="3" data-label=""></td>
+    </tr>`;
   }
 
   const trial = computeTrialBalance(bkEntries);
@@ -1972,7 +2279,7 @@ function renderBookkeeping() {
     trialTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--ink-soft); padding:20px;">기록된 분개가 없습니다.</td></tr>';
   } else {
     trialTbody.innerHTML = activeTrial.map(a => `
-      <tr>
+      <tr class="clickable-row" data-account="${escapeHtml(a.name)}" title="클릭하면 이 계정의 분개 상세내역을 볼 수 있습니다">
         <td>${a.code}</td>
         <td>${a.name}</td>
         <td>${a.type}</td>
@@ -1982,22 +2289,35 @@ function renderBookkeeping() {
         <td class="amt">${fmtWon(a.creditBal)}</td>
       </tr>
     `).join('');
+    trialTbody.querySelectorAll('tr[data-account]').forEach(tr => {
+      tr.addEventListener('click', () => showAccountDetail(tr.getAttribute('data-account')));
+    });
   }
 
   const plTbody = document.getElementById('bkPlRows');
   plTbody.innerHTML = `
-    <tr><td>수익 합계 (매출 등)</td><td class="amt">${fmtWon(pl.revenue)}</td></tr>
-    <tr><td>비용 합계 (급여·수수료·경비 등)</td><td class="amt">${fmtWon(pl.expense)}</td></tr>
+    <tr class="clickable-row" data-pltype="수익" title="클릭하면 수익 계정 상세내역을 볼 수 있습니다"><td>수익 합계 (매출 등)</td><td class="amt">${fmtWon(pl.revenue)}</td></tr>
+    <tr class="clickable-row" data-pltype="비용" title="클릭하면 비용 계정 상세내역을 볼 수 있습니다"><td>비용 합계 (급여·수수료·경비 등)</td><td class="amt">${fmtWon(pl.expense)}</td></tr>
     <tr style="font-weight:700; background:var(--accent-soft);"><td>당기순이익</td><td class="amt">${fmtWon(pl.netIncome)}</td></tr>
   `;
+  plTbody.querySelectorAll('tr[data-pltype]').forEach(tr => {
+    const type = tr.getAttribute('data-pltype');
+    tr.addEventListener('click', () => showTypeDetail(type, `${type} 계정 — 관련 분개 내역`));
+  });
 
   const bsTbody = document.getElementById('bkBsRows');
   bsTbody.innerHTML = `
-    <tr><td>자산 합계</td><td class="amt">${fmtWon(bs.assets)}</td></tr>
-    <tr><td>부채 합계</td><td class="amt">${fmtWon(bs.liabilities)}</td></tr>
-    <tr><td>자본 합계 (당기순이익 포함)</td><td class="amt">${fmtWon(bs.capital)}</td></tr>
+    <tr class="clickable-row" data-bstype="자산" title="클릭하면 자산 계정 상세내역을 볼 수 있습니다"><td>자산 합계</td><td class="amt">${fmtWon(bs.assets)}</td></tr>
+    <tr class="clickable-row" data-bstype="부채" title="클릭하면 부채 계정 상세내역을 볼 수 있습니다"><td>부채 합계</td><td class="amt">${fmtWon(bs.liabilities)}</td></tr>
+    <tr class="clickable-row" data-bstype="자본" title="클릭하면 자본 계정 상세내역을 볼 수 있습니다 (당기순이익분 제외, 손익계산서 참조)"><td>자본 합계 (당기순이익 포함)</td><td class="amt">${fmtWon(bs.capital)}</td></tr>
     <tr style="font-weight:700;"><td>대차평형 검증</td><td class="amt" style="color:${bs.balanced ? 'var(--ink)' : 'var(--danger)'}">${bs.balanced ? '✓ 일치 (자산 = 부채 + 자본)' : '⚠ 불일치 — 분개 점검 필요'}</td></tr>
   `;
+  bsTbody.querySelectorAll('tr[data-bstype]').forEach(tr => {
+    const type = tr.getAttribute('data-bstype');
+    tr.addEventListener('click', () => showTypeDetail(type, `${type} 계정 — 관련 분개 내역`));
+  });
+
+  renderBankLedger();
 }
 
 function exportBkCSV() {
