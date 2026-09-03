@@ -460,7 +460,9 @@
         <input type="hidden" id="bk-m-source-id" value="">
         <input type="hidden" id="bk-m-source-type" value="">
         <div class="err" id="bkManualErr"></div>
+        <input type="hidden" id="bk-m-editing-id" value="">
         <button class="primary" id="bkSaveManualBtn" style="margin-top:6px; margin-bottom:20px;">분개 저장</button>
+        <button id="cancelBkManualEditBtn" style="margin-top:6px; margin-bottom:20px; margin-left:6px; display:none;">수정 취소</button>
 
         <h2 style="font-size:14px; margin-bottom:10px;">전체 분개장 내역</h2>
         <div style="overflow-x:auto;">
@@ -1905,6 +1907,10 @@ function renderBkAutoCandidates() {
 }
 
 function loadCandidateIntoManualForm(candidate){
+  editingBkEntryId = null;
+  document.getElementById('bk-m-editing-id').value = '';
+  document.getElementById('bkSaveManualBtn').textContent = '분개 저장';
+  document.getElementById('cancelBkManualEditBtn').style.display = 'none';
   document.getElementById('bk-m-date').value = candidate.date || '';
   document.getElementById('bk-m-desc').value = candidate.description || '';
   document.getElementById('bk-m-partner').value = candidate.partner || '';
@@ -1981,6 +1987,53 @@ async function confirmAllAutoCandidates() {
   }
 }
 
+let editingBkEntryId = null;
+
+function startEditBkEntry(id) {
+  const entry = bkEntries.find(e => e.id === id);
+  if (!entry) return;
+  editingBkEntryId = id;
+  document.getElementById('bk-m-date').value = entry.date || '';
+  document.getElementById('bk-m-desc').value = entry.description || '';
+  document.getElementById('bk-m-partner').value = entry.partner || '';
+  document.getElementById('bk-m-debit-account').value = entry.debitAccount || '';
+  document.getElementById('bk-m-debit-amount').value = entry.debitAmount || '';
+  document.getElementById('bk-m-doctype').value = entry.docType || '';
+  document.getElementById('bk-m-credit-account').value = entry.creditAccount || '';
+  document.getElementById('bk-m-credit-amount').value = entry.creditAmount || '';
+  document.getElementById('bk-m-note').value = entry.note || '';
+  document.getElementById('bk-m-source-id').value = entry.sourceId || '';
+  document.getElementById('bk-m-source-type').value = entry.source || '';
+  document.getElementById('bk-m-editing-id').value = id;
+
+  document.querySelectorAll('.bk-subtab-btn').forEach(b => b.classList.remove('active'));
+  const manualTabBtn = document.querySelector('.bk-subtab-btn[data-bksub="manual"]');
+  if (manualTabBtn) manualTabBtn.classList.add('active');
+  ['auto', 'manual', 'trial', 'pl', 'bs', 'bank'].forEach(key => {
+    const el = document.getElementById(`bk-sub-${key}`);
+    if (el) el.style.display = key === 'manual' ? '' : 'none';
+  });
+
+  document.getElementById('bkSaveManualBtn').textContent = '수정 저장';
+  document.getElementById('cancelBkManualEditBtn').style.display = '';
+  document.getElementById('bk-m-debit-account').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('이 분개 건을 수정 중입니다. 값을 고친 뒤 "수정 저장"을 누르세요.');
+}
+
+function cancelBkManualEdit() {
+  editingBkEntryId = null;
+  document.getElementById('bk-m-editing-id').value = '';
+  ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('bk-m-debit-account').value = '';
+  document.getElementById('bk-m-credit-account').value = '';
+  document.getElementById('bk-m-source-id').value = '';
+  document.getElementById('bk-m-source-type').value = '';
+  document.getElementById('bkSaveManualBtn').textContent = '분개 저장';
+  document.getElementById('cancelBkManualEditBtn').style.display = 'none';
+}
+
 async function addManualBkEntry() {
   const date = document.getElementById('bk-m-date').value;
   const desc = document.getElementById('bk-m-desc').value.trim();
@@ -2006,19 +2059,30 @@ async function addManualBkEntry() {
   if (!uid) return;
 
   try {
-    await addDoc(bkCollection(uid), {
-      date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
-      partner, docType, note,
-      source: sourceId ? (sourceType || 'auto-edited') : 'manual',
-      sourceId: sourceId || '',
-      createdAt: serverTimestamp()
-    });
-    ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-    document.getElementById('bk-m-source-id').value = '';
-    document.getElementById('bk-m-source-type').value = '';
-    showToast('수동 분개가 저장되었습니다');
+    if (editingBkEntryId) {
+      await updateDoc(doc(db, 'users', uid, 'bookkeeping_entries', editingBkEntryId), {
+        date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
+        partner, docType, note,
+        source: sourceId ? (sourceType || 'auto-edited') : 'manual',
+        sourceId: sourceId || '',
+      });
+      showToast('분개 내역이 수정되었습니다');
+      cancelBkManualEdit();
+    } else {
+      await addDoc(bkCollection(uid), {
+        date, description: desc, debitAccount, debitAmount, creditAccount, creditAmount,
+        partner, docType, note,
+        source: sourceId ? (sourceType || 'auto-edited') : 'manual',
+        sourceId: sourceId || '',
+        createdAt: serverTimestamp()
+      });
+      ['bk-m-desc', 'bk-m-debit-amount', 'bk-m-credit-amount', 'bk-m-partner', 'bk-m-doctype', 'bk-m-note'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('bk-m-source-id').value = '';
+      document.getElementById('bk-m-source-type').value = '';
+      showToast('수동 분개가 저장되었습니다');
+    }
   } catch (e) {
     showToast('저장 중 오류가 발생했습니다');
   }
@@ -2249,12 +2313,15 @@ function renderBookkeeping() {
         <td data-label="거래처">${escapeHtml(e.partner || '')}</td>
         <td data-label="출처">${e.source === 'manual' ? '수동' : e.source === 'auto-corp-expense' ? '법인경비' : e.source === 'auto-payroll' ? '급여' : ''}</td>
         <td data-label="비고">${escapeHtml(e.note || '')}</td>
-        <td><button class="del bk-del-btn" data-bkid="${e.id}" title="삭제">✕</button></td>
+        <td><button class="edit-btn bk-edit-btn2" data-bkid="${e.id}" title="수정">✎</button><button class="del bk-del-btn" data-bkid="${e.id}" title="삭제">✕</button></td>
       </tr>
     `).join('');
 
     tbody.querySelectorAll('.bk-del-btn').forEach(btn => {
       btn.addEventListener('click', () => deleteBkEntry(btn.getAttribute('data-bkid')));
+    });
+    tbody.querySelectorAll('.bk-edit-btn2').forEach(btn => {
+      btn.addEventListener('click', () => startEditBkEntry(btn.getAttribute('data-bkid')));
     });
 
     const totalDebit = sorted.reduce((s,e) => s + (Number(e.debitAmount)||0), 0);
@@ -2340,6 +2407,7 @@ function exportBkCSV() {
 document.getElementById('bkLoadAutoBtn').addEventListener('click', loadAutoCandidates);
 document.getElementById('bkConfirmAllAutoBtn').addEventListener('click', confirmAllAutoCandidates);
 document.getElementById('bkSaveManualBtn').addEventListener('click', addManualBkEntry);
+document.getElementById('cancelBkManualEditBtn').addEventListener('click', cancelBkManualEdit);
 document.getElementById('bkExportCsvBtn').addEventListener('click', exportBkCSV);
 
 onAuthStateChanged(auth, (user) => {
