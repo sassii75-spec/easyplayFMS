@@ -68,15 +68,15 @@
     font-size:14px; font-weight:500;
   }
 
-  .hero{padding:140px 0 0; overflow:hidden;}
+  .hero{padding:96px 0 0; overflow:hidden;}
   .hero-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:20px; align-items:center;}
   .hero-top{max-width:640px;}
   .eyebrow{
-    display:inline-flex; align-items:center; gap:8px;
-    font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--gray);
-    margin-bottom:36px; text-transform:uppercase; letter-spacing:0.08em;
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--mint-dark);
+    margin-bottom:28px; text-transform:uppercase; letter-spacing:0.06em;
   }
-  .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--mint); display:inline-block;}
+  .eyebrow::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--mint); display:inline-block;}
   h1{
     font-family:'Space Grotesk','Pretendard',sans-serif;
     font-weight:700;
@@ -121,9 +121,13 @@
   section{padding:128px 0;}
   .section-head{max-width:600px; margin:0 0 68px;}
   .section-label{
-    font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--gray);
-    text-transform:uppercase; letter-spacing:0.08em; margin:0 0 10px;
+    display:flex; align-items:center; gap:9px;
+    font-family:'JetBrains Mono',monospace; font-size:14.5px; font-weight:700; color:var(--mint-dark);
+    text-transform:uppercase; letter-spacing:0.07em; margin:0 0 14px;
   }
+  .section-label::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--mint); display:inline-block; flex-shrink:0;}
+  .about-label{display:flex; align-items:center; gap:9px;}
+  .about-label::before{content:''; width:8px; height:8px; border-radius:50%; background:var(--mint); display:inline-block; flex-shrink:0;}
   h2{font-family:'Space Grotesk','Pretendard',sans-serif; font-size:38px; font-weight:700; margin:0 0 16px; letter-spacing:-0.015em; line-height:1.28;}
   .section-desc{color:var(--gray); font-size:15px; margin:0; max-width:480px;}
 
@@ -212,10 +216,14 @@
   .compare-old{background:#F2F1EC; border:1px solid var(--line);}
   .compare-new{background:var(--mint-tint); border:1px solid rgba(20,184,166,0.28);}
   .compare-label{
-    font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:0.06em; text-transform:uppercase;
+    display:flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono',monospace; font-size:13.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
   }
+  .compare-label::before{content:''; width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0;}
   .compare-old .compare-label{color:var(--gray);}
+  .compare-old .compare-label::before{background:#C7C9C1;}
   .compare-new .compare-label{color:var(--mint-dark);}
+  .compare-new .compare-label::before{background:var(--mint);}
   .compare-steps{display:flex; flex-direction:column; margin:0; padding:0; list-style:none;}
   .compare-steps li{
     position:relative; padding:0 0 22px 26px; font-size:14.5px;
@@ -238,19 +246,21 @@
   .compare-new .compare-steps li span{color:var(--ink); font-size:13.5px;}
 
   .process-flow{
-    display:grid; grid-template-columns:repeat(5, 1fr); gap:0; margin-top:24px; position:relative;
+    display:grid; grid-template-columns:repeat(5, 1fr); column-gap:34px; margin-top:24px; position:relative;
   }
   .pstep{
-    padding:0 16px 0 0; display:flex; flex-direction:column; gap:14px; position:relative;
+    padding:0; display:flex; flex-direction:column; gap:14px; position:relative;
   }
   .pstep-num{
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; color:var(--mint-dark);
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--mint-dark);
     width:36px; height:36px; border-radius:50%; background:var(--mint-tint);
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
   .pstep:nth-child(even) .pstep-num{color:var(--purple); background:var(--purple-tint);}
   .pstep-arrow{
-    position:absolute; top:9px; right:-14px; width:24px; color:var(--gray); font-size:20px; font-weight:700;
+    position:absolute; top:18px; left:100%; width:34px; margin-left:0;
+    transform:translateY(-50%); text-align:center;
+    color:var(--gray); font-size:18px; font-weight:700; line-height:1;
   }
   .pstep:last-child .pstep-arrow{display:none;}
   .pstep h4{font-size:15px; margin:0; font-weight:700;}
