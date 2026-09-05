@@ -266,6 +266,42 @@
   .pstep h4{font-size:15px; margin:0; font-weight:700;}
   .pstep p{font-size:13px; color:var(--gray); margin:0; line-height:1.55;}
 
+  .portfolio-dark{
+    background:var(--ink); color:#fff; padding:64px 0;
+  }
+  .portfolio-dark .section-label-dark{color:#8FF0C6;}
+  .portfolio-h2{color:#fff; font-size:34px; margin:0;}
+  .portfolio-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:16px;
+  }
+  .portfolio-grid-3{grid-template-columns:repeat(2, 1fr);}
+  .portfolio-grid-3 .portfolio-card{min-height:320px;}
+  .portfolio-grid-3 .portfolio-title{font-size:19px;}
+  .portfolio-card{
+    position:relative; display:block; min-height:360px; border-radius:16px;
+    background-size:cover; background-position:center; background-color:#232A33;
+    overflow:hidden; text-decoration:none;
+  }
+  .portfolio-card-shade{
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(10,14,20,0.15) 0%, rgba(10,14,20,0.15) 45%, rgba(10,14,20,0.88) 100%);
+  }
+  .portfolio-badge{
+    position:absolute; top:24px; left:24px; z-index:2;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(10,14,20,0.55); backdrop-filter:blur(4px);
+    padding:8px 16px 8px 8px; border-radius:999px;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; color:#fff;
+  }
+  .portfolio-badge-icon{
+    width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; color:#fff; flex-shrink:0;
+  }
+  .portfolio-title{
+    position:absolute; left:24px; bottom:24px; right:24px; z-index:2;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; line-height:1.4; color:#fff;
+  }
+
   .case-highlight{
     margin-top:28px; padding:22px 26px; border-radius:var(--radius);
     background:var(--ink); color:#fff; display:flex; align-items:center; gap:18px; flex-wrap:wrap;
@@ -314,6 +350,12 @@
     .pstep{padding-right:0;}
     .pstep-arrow{display:none;}
     .quickstart{grid-template-columns:1fr; padding:36px 26px;}
+    .portfolio-grid{grid-template-columns:1fr;}
+    .portfolio-card{min-height:280px;}
+    .portfolio-grid-3 .portfolio-card{min-height:260px;}
+  }
+  @media (max-width: 1000px) and (min-width: 861px){
+    .portfolio-grid-3{grid-template-columns:1fr 1fr;}
   }
 </style>
 </head>
@@ -441,53 +483,52 @@
     </div>
   </section>
 
-  <section id="products" class="wrap">
-    <div class="section-head">
-      <p class="section-label">Portfolio</p>
-      <h2>말이 아니라, 실제로 만든 제품</h2>
-      <p class="section-desc">현장의 문제를 직접 해결하며 만든, 지금도 실제로 쓰이는 제품들입니다.</p>
-    </div>
-    <div class="products">
-      <div class="pcard">
-        <div class="pshot-frame">
-          <div class="pshot-bar"><span></span><span></span><span></span></div>
-          <img src="/easytrans-shot.jpg" alt="Easy Trans 영상 번역 편집 화면" loading="lazy">
+  <section id="products">
+    <div class="portfolio-dark">
+      <div class="wrap" style="padding-top:0; padding-bottom:0;">
+        <div class="section-head">
+          <p class="section-label section-label-dark">Portfolio</p>
+          <h2 class="portfolio-h2">우리의 포트폴리오를 소개합니다.</h2>
         </div>
-        <div class="pcard-body">
-          <div class="pcard-top">
-            <span class="pcard-name">Easy Trans</span>
-            <span class="pcard-tag">AI 영상 번역</span>
-          </div>
-          <p class="pcard-desc">AI 기반 스마트 영상 번역 및 자막 편집 솔루션</p>
-          <ul class="pcard-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>영상·이미지 자르기 및 편집</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>자막 다국어 변환 (8개국어 지원)</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>영상 내용 기반 학습용 문항 콘텐츠 자동 생성</li>
-          </ul>
+        <div class="portfolio-grid portfolio-grid-3">
+          <a class="portfolio-card" href="#" style="background-image:url('/easytrans-shot.jpg');">
+            <div class="portfolio-card-shade"></div>
+            <div class="portfolio-badge">
+              <span class="portfolio-badge-icon" style="background:#14B8A6;">ET</span>
+              <span>Easy Trans</span>
+            </div>
+            <div class="portfolio-title">AI 영상 번역<br>스마트 자막 편집 솔루션</div>
+          </a>
+          <a class="portfolio-card" href="#" style="background-image:url('/easyibt-shot.jpg');">
+            <div class="portfolio-card-shade"></div>
+            <div class="portfolio-badge">
+              <span class="portfolio-badge-icon" style="background:#7C6FF0;">IB</span>
+              <span>Easy IBT</span>
+            </div>
+            <div class="portfolio-title">AI 온라인 평가 시스템<br>읽기·듣기·쓰기 영역 지원</div>
+          </a>
+          <a class="portfolio-card" href="#" style="background-image:url('/easylms-shot.png');">
+            <div class="portfolio-card-shade"></div>
+            <div class="portfolio-badge">
+              <span class="portfolio-badge-icon" style="background:#0F8577;">LM</span>
+              <span>Easy LMS</span>
+            </div>
+            <div class="portfolio-title">AI 학습관리 시스템<br>과정 추천부터 온라인 모의평가까지</div>
+          </a>
+          <a class="portfolio-card" href="#" style="background-image:url('/fms-shot.png'); background-position:top center;">
+            <div class="portfolio-card-shade"></div>
+            <div class="portfolio-badge">
+              <span class="portfolio-badge-icon" style="background:#1A2027;">FM</span>
+              <span>FMS</span>
+            </div>
+            <div class="portfolio-title">소상공인 재무·회계관리 시스템<br>법인경비부터 복식부기까지 자동화</div>
+          </a>
+        </div>
+        <div class="case-highlight" style="background:rgba(255,255,255,0.06); margin-top:24px;">
+          <b>7일</b>
+          <span>Easy Trans, Easy IBT, Easy LMS, FMS 모두 아이디어 미팅 후 일주일 안에 실제 작동하는 샘플로 먼저 확인한 뒤, 그대로 다듬어 지금의 서비스가 되었습니다.</span>
         </div>
       </div>
-      <div class="pcard">
-        <div class="pshot-frame">
-          <div class="pshot-bar"><span></span><span></span><span></span></div>
-          <img src="/easyibt-shot.jpg" alt="Easy IBT 온라인 평가 시스템 화면" loading="lazy">
-        </div>
-        <div class="pcard-body">
-          <div class="pcard-top">
-            <span class="pcard-name">Easy IBT</span>
-            <span class="pcard-tag">온라인 평가</span>
-          </div>
-          <p class="pcard-desc">읽기·듣기·쓰기 영역을 지원하는 온라인 평가 시스템</p>
-          <ul class="pcard-features">
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>읽기·듣기·쓰기 영역 문항 업로드 및 편집</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>온라인 응시 환경 제공</li>
-            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C6FF0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>간편한 평가 운영 및 관리</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="case-highlight">
-      <b>7일</b>
-      <span>Easy Trans, Easy IBT 모두 아이디어 미팅 후 일주일 안에 실제 작동하는 샘플로 먼저 확인한 뒤, 그대로 다듬어 지금의 서비스가 되었습니다.</span>
     </div>
   </section>
 
