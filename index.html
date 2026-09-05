@@ -302,6 +302,20 @@
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; line-height:1.4; color:#fff;
   }
 
+  .partner-grid{
+    display:grid; grid-template-columns:repeat(6, 1fr); gap:1px; margin-top:8px;
+    background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+  }
+  .partner-logo{
+    background:#fff; padding:28px 20px; display:flex; align-items:center; justify-content:center;
+    min-height:100px;
+  }
+  .partner-logo img{
+    max-width:100%; max-height:38px; width:auto; height:auto; object-fit:contain;
+    filter:grayscale(1) opacity(0.55); transition:filter 0.2s ease;
+  }
+  .partner-logo:hover img{filter:grayscale(0) opacity(1);}
+
   .case-highlight{
     margin-top:28px; padding:22px 26px; border-radius:var(--radius);
     background:var(--ink); color:#fff; display:flex; align-items:center; gap:18px; flex-wrap:wrap;
@@ -352,10 +366,12 @@
     .quickstart{grid-template-columns:1fr; padding:36px 26px;}
     .portfolio-grid{grid-template-columns:1fr;}
     .portfolio-card{min-height:280px;}
+    .partner-grid{grid-template-columns:repeat(2, 1fr);}
     .portfolio-grid-3 .portfolio-card{min-height:260px;}
   }
   @media (max-width: 1000px) and (min-width: 861px){
     .portfolio-grid-3{grid-template-columns:1fr 1fr;}
+    .partner-grid{grid-template-columns:repeat(3, 1fr);}
   }
 </style>
 </head>
@@ -379,6 +395,7 @@
       <a href="#why-us">차별점</a>
       <a href="#process">프로세스</a>
       <a href="#products">포트폴리오</a>
+      <a href="#partners">파트너</a>
       <a href="#about">소개</a>
       <a href="#quickstart" class="nav-cta">상담 문의</a>
     </div>
@@ -529,6 +546,22 @@
           <span>Easy Trans, Easy IBT, Easy LMS, FMS 모두 아이디어 미팅 후 일주일 안에 실제 작동하는 샘플로 먼저 확인한 뒤, 그대로 다듬어 지금의 서비스가 되었습니다.</span>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="partners" class="wrap">
+    <div class="section-head">
+      <p class="section-label">Partners &amp; Customers</p>
+      <h2>이런 곳들과 함께합니다</h2>
+      <p class="section-desc">신뢰를 바탕으로 오랫동안 함께 일해온 파트너, 고객사입니다.</p>
+    </div>
+    <div class="partner-grid">
+      <div class="partner-logo"><img src="/partner-kyodam.png" alt="교담"></div>
+      <div class="partner-logo"><img src="/partner-univa.png" alt="유니바"></div>
+      <div class="partner-logo"><img src="/partner-zezedu.png" alt="제제듀"></div>
+      <div class="partner-logo"><img src="/partner-newgensys.png" alt="뉴젠시스"></div>
+      <div class="partner-logo"><img src="/partner-daekyo.png" alt="대교"></div>
+      <div class="partner-logo"><img src="/partner-kyohaksa.png" alt="교학사"></div>
     </div>
   </section>
 
