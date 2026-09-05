@@ -182,7 +182,14 @@
       <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고 (목적 등)</label><input type="text" id="f-memo" list="memoList" placeholder="예: 3분기 자문 관련 논의, 법인 건 아님" autocomplete="off"><datalist id="memoList"></datalist></div>
     </div>
     <div class="grid-form3">
-      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·증빙 파일 (PDF, 이미지, 여러 장 첨부 가능)</label><input type="file" id="f-receipt" accept=".pdf,image/*" multiple></div>
+      <div class="field-wrap" style="grid-column: 1 / -1;">
+        <label>영수증·증빙 파일 (PDF, 이미지, 여러 장 첨부 가능)</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="file" id="f-receipt" accept=".pdf,image/*" multiple style="flex:1; min-width:200px;">
+          <button type="button" id="advisorAiBtn" style="white-space:nowrap;">🤖 AI로 인식</button>
+        </div>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">이미지(사진) 파일만 인식 가능합니다. AI가 채운 값은 저장 전 꼭 확인하세요.</div>
+      </div>
     </div>
     <div class="err" id="formErr"></div>
     <button class="primary" id="addBtn" style="margin-top:6px;">기록 추가</button>
@@ -250,7 +257,14 @@
       <div class="field-wrap"><label>비고</label><input type="text" id="c-memo" list="corpMemoList" placeholder="예: 전자세금계산서 발급 인증서, 부가세 매입세액공제 대상" autocomplete="off"><datalist id="corpMemoList"></datalist></div>
     </div>
     <div class="grid-form3">
-      <div class="field-wrap" style="grid-column: 1 / -1;"><label>영수증·세금계산서 파일 (PDF, 이미지, 여러 장 첨부 가능)</label><input type="file" id="c-receipt" accept=".pdf,image/*" multiple></div>
+      <div class="field-wrap" style="grid-column: 1 / -1;">
+        <label>영수증·세금계산서 파일 (PDF, 이미지, 여러 장 첨부 가능)</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="file" id="c-receipt" accept=".pdf,image/*" multiple style="flex:1; min-width:200px;">
+          <button type="button" id="corpAiBtn" style="white-space:nowrap;">🤖 AI로 인식</button>
+        </div>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">이미지(사진) 파일만 인식 가능합니다. AI가 채운 값은 저장 전 꼭 확인하세요.</div>
+      </div>
     </div>
     <div class="err" id="corpFormErr"></div>
     <button class="primary" id="corpAddBtn" style="margin-top:6px;">기록 추가</button>
@@ -308,7 +322,14 @@
       <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고</label><input type="text" id="r-memo" list="revenueMemoList" placeholder="예: 전자세금계산서 발행분" autocomplete="off"><datalist id="revenueMemoList"></datalist></div>
     </div>
     <div class="grid-form3">
-      <div class="field-wrap" style="grid-column: 1 / -1;"><label>세금계산서·증빙 파일 (PDF, 이미지, 여러 장 첨부 가능)</label><input type="file" id="r-receipt" accept=".pdf,image/*" multiple></div>
+      <div class="field-wrap" style="grid-column: 1 / -1;">
+        <label>세금계산서·증빙 파일 (PDF, 이미지, 여러 장 첨부 가능)</label>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <input type="file" id="r-receipt" accept=".pdf,image/*" multiple style="flex:1; min-width:200px;">
+          <button type="button" id="revenueAiBtn" style="white-space:nowrap;">🤖 AI로 인식</button>
+        </div>
+        <div style="font-size:11px; color:var(--ink-soft); margin-top:4px;">이미지(사진) 파일만 인식 가능합니다. AI가 채운 값은 저장 전 꼭 확인하세요.</div>
+      </div>
     </div>
     <div class="err" id="revenueFormErr"></div>
     <button class="primary" id="revenueAddBtn" style="margin-top:6px;">기록 추가</button>
@@ -507,6 +528,9 @@ import {
 import {
   getStorage, ref, uploadBytes, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+import {
+  getFunctions, httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js";
 
 // ===== 여기를 Firebase 콘솔에서 발급받은 값으로 채워주세요 =====
 const firebaseConfig = {
@@ -523,6 +547,100 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functionsInstance = getFunctions(app, 'asia-northeast3');
+const extractReceiptDataFn = httpsCallable(functionsInstance, 'extractReceiptData');
+
+// ===== AI 영수증 자동 인식 (공통) =====
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+const AI_FIELD_MAP = {
+  advisor: { date:'f-date', partner:'f-partner', desc:'f-desc', proof:'f-proof', amount:'f-amount', errBox:'formErr', fileInput:'f-receipt' },
+  corp:    { date:'c-date', partner:'c-partner', desc:'c-desc', proof:'c-proof', amount:'c-amount', errBox:'corpFormErr', fileInput:'c-receipt' },
+  revenue: { date:'r-date', partner:'r-partner', desc:'r-desc', proof:'r-proof', errBox:'revenueFormErr', fileInput:'r-receipt' },
+};
+function checkAndFillAiField(fieldId, aiValue, warnings, label){
+  const el = document.getElementById(fieldId);
+  const current = Number(el.value);
+  const aiNum = Number(aiValue);
+  if(!el.value){
+    el.value = aiNum;
+  } else if(Math.abs(current - aiNum) > 1){
+    warnings.push(`${label}: 입력값 ${current.toLocaleString()}원 ↔ AI 인식값 ${aiNum.toLocaleString()}원`);
+  }
+}
+function applyAiResult(scope, result){
+  const ids = AI_FIELD_MAP[scope];
+  const warnings = [];
+
+  if(result.date){
+    const el = document.getElementById(ids.date);
+    if(!el.value) el.value = result.date;
+  }
+  if(result.partner){
+    const el = document.getElementById(ids.partner);
+    if(!el.value) el.value = result.partner;
+  }
+  if(result.desc){
+    const el = document.getElementById(ids.desc);
+    if(!el.value) el.value = result.desc;
+  }
+  if(result.proof_type){
+    const el = document.getElementById(ids.proof);
+    const opts = Array.from(el.options).map(o => o.value);
+    if(opts.includes(result.proof_type)) el.value = result.proof_type;
+  }
+
+  if(scope === 'revenue'){
+    if(result.supply_amount != null) checkAndFillAiField('r-supply', result.supply_amount, warnings, '공급가액');
+    if(result.vat_amount != null) checkAndFillAiField('r-vat', result.vat_amount, warnings, '부가세');
+    document.getElementById('r-supply').dispatchEvent(new Event('input'));
+  } else if(result.total_amount != null){
+    checkAndFillAiField(ids.amount, result.total_amount, warnings, '금액');
+  }
+
+  const errEl = document.getElementById(ids.errBox);
+  if(warnings.length){
+    errEl.innerHTML = '⚠️ AI 인식 결과가 입력값과 달라요, 확인해주세요:<br>' + warnings.join('<br>');
+    errEl.style.display = 'block';
+    errEl.style.color = '#8a4a1f';
+  } else {
+    showToast(`AI 인식 완료 (확신도: ${result.confidence || '알 수 없음'}) — 내용을 확인 후 저장하세요`);
+  }
+}
+async function runAiExtract(scope, btnId){
+  const ids = AI_FIELD_MAP[scope];
+  const fileInput = document.getElementById(ids.fileInput);
+  const file = fileInput.files[0];
+  if(!file){ showToast('먼저 이미지를 선택해주세요'); return; }
+  if(!file.type.startsWith('image/')){ showToast('이미지 파일만 AI 인식이 가능해요 (PDF는 아직 지원 안 함)'); return; }
+
+  const btn = document.getElementById(btnId);
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'AI 인식 중...';
+  try{
+    const base64 = await fileToBase64(file);
+    const res = await extractReceiptDataFn({ imageBase64: base64, mimeType: file.type });
+    const result = res.data && res.data.result;
+    if(!result) throw new Error('empty result');
+    applyAiResult(scope, result);
+  }catch(e){
+    console.error(e);
+    showToast('AI 인식 중 오류가 발생했습니다');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+document.getElementById('advisorAiBtn').addEventListener('click', () => runAiExtract('advisor', 'advisorAiBtn'));
+document.getElementById('corpAiBtn').addEventListener('click', () => runAiExtract('corp', 'corpAiBtn'));
+document.getElementById('revenueAiBtn').addEventListener('click', () => runAiExtract('revenue', 'revenueAiBtn'));
 
 let expenses = [];
 let unsub = null;
@@ -663,10 +781,10 @@ function render(){
       <tr>
         <td data-label="날짜">${e.date || ''}</td>
         <td data-label="구분"><span class="tag ${typeTagClass(e.type)}">${e.type}</span></td>
-        <td data-label="카테고리">${e.category}</td>
+        <td data-label="카테고리">${escapeHtml(e.category)}</td>
         <td data-label="적요">${escapeHtml(e.desc)}</td>
         <td data-label="거래처/참석자">${escapeHtml(e.partner || '')}</td>
-        <td data-label="증빙">${e.proof}</td>
+        <td data-label="증빙">${escapeHtml(e.proof)}</td>
         <td data-label="파일">${receiptLinkHtml(e)}</td>
         <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="비고">${escapeHtml(e.memo || '')}</td>
@@ -738,10 +856,10 @@ function renderCorp(){
     tbody.innerHTML = list.map(e => `
       <tr>
         <td data-label="날짜">${e.date || ''}</td>
-        <td data-label="카테고리">${e.category}</td>
+        <td data-label="카테고리">${escapeHtml(e.category)}</td>
         <td data-label="적요">${escapeHtml(e.desc)}</td>
         <td data-label="거래처">${escapeHtml(e.partner || '')}</td>
-        <td data-label="증빙">${e.proof}</td>
+        <td data-label="증빙">${escapeHtml(e.proof)}</td>
         <td data-label="파일">${receiptLinkHtml(e)}${settlementCellHtml(e)}</td>
         <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="결제계좌">${escapeHtml(e.account || '')}</td>
@@ -956,7 +1074,7 @@ function renderRevenue(){
         <td data-label="적요">${escapeHtml(r.desc || '')}</td>
         <td class="amt" data-label="공급가액">${fmtWon(r.supply)}</td>
         <td class="amt" data-label="부가세">${fmtWon(r.vat)}</td>
-        <td data-label="증빙">${r.proof || ''}</td>
+        <td data-label="증빙">${escapeHtml(r.proof || '')}</td>
         <td data-label="파일">${receiptLinkHtml({receipts:r.receipts})}${revenuePaymentCellHtml(r)}</td>
         <td data-label="입금상태">${revenuePaidBadgeHtml(r)}</td>
         <td data-label="비고">${escapeHtml(r.memo || '')}</td>

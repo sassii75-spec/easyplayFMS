@@ -1,0 +1,13 @@
+{
+  "name": "fms-functions",
+  "description": "FMS 영수증 AI 인식 Cloud Functions",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "private": true
+}
