@@ -1,3 +1,4 @@
 .vercel
 .env*
 .DS_Store
+firebase-functions/functions/node_modules/
