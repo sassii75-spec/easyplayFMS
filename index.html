@@ -311,8 +311,14 @@
     width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:700; color:#fff; flex-shrink:0;
   }
+  .portfolio-mascot{
+    position:absolute; bottom:10px; right:10px; z-index:2;
+    height:112px; width:auto;
+    filter:drop-shadow(0 8px 14px rgba(0,0,0,0.35));
+    pointer-events:none;
+  }
   .portfolio-title{
-    position:absolute; left:24px; bottom:24px; right:24px; z-index:2;
+    position:absolute; left:24px; bottom:24px; right:120px; z-index:2;
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; line-height:1.4; color:#fff;
   }
 
@@ -383,6 +389,8 @@
     .partner-grid{grid-template-columns:repeat(2, 1fr);}
     .no-wrap-desc{white-space:normal;}
     .portfolio-grid-3 .portfolio-card{min-height:260px;}
+    .portfolio-mascot{height:76px; bottom:8px; right:8px;}
+    .portfolio-title{right:88px; font-size:19px;}
   }
   @media (max-width: 1000px) and (min-width: 861px){
     .portfolio-grid-3{grid-template-columns:1fr 1fr;}
@@ -546,6 +554,7 @@
               <span>Easy Trans</span>
             </div>
             <div class="portfolio-title">AI 영상 번역<br>스마트 자막 편집 솔루션</div>
+            <img class="portfolio-mascot" src="/mascot-trans.png" alt="Easy Trans 캐릭터">
           </a>
           <a class="portfolio-card" href="#" style="background-image:url('/easyibt-shot.jpg');">
             <div class="portfolio-card-shade"></div>
@@ -554,6 +563,7 @@
               <span>Easy IBT</span>
             </div>
             <div class="portfolio-title">AI 온라인 평가 시스템<br>읽기·듣기·쓰기 영역 지원</div>
+            <img class="portfolio-mascot" src="/mascot-ibt.png" alt="Easy IBT 캐릭터">
           </a>
           <a class="portfolio-card" href="#" style="background-image:url('/easylms-shot.png');">
             <div class="portfolio-card-shade"></div>
@@ -562,6 +572,7 @@
               <span>Easy LMS</span>
             </div>
             <div class="portfolio-title">AI 학습관리 시스템<br>과정 추천부터 온라인 모의평가까지</div>
+            <img class="portfolio-mascot" src="/mascot-lms.png" alt="Easy LMS 캐릭터">
           </a>
           <a class="portfolio-card" href="#" style="background-image:url('/fms-shot.png'); background-position:top center;">
             <div class="portfolio-card-shade"></div>
@@ -570,6 +581,7 @@
               <span>FMS</span>
             </div>
             <div class="portfolio-title">소상공인 재무·회계관리 시스템<br>법인경비부터 복식부기까지 자동화</div>
+            <img class="portfolio-mascot" src="/mascot-fms.png" alt="FMS 캐릭터">
           </a>
         </div>
         <div class="case-highlight" style="background:rgba(255,255,255,0.06); margin-top:24px;">
