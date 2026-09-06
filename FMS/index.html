@@ -551,9 +551,6 @@
             <button class="primary" id="bkBankCheckBtn">대조하기</button>
           </div>
           <div id="bkBankReconResult" style="display:none;"></div>
-import {
-  getFunctions, httpsCallable
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js";
         </div>
         <div style="overflow-x:auto;">
           <table>
@@ -570,6 +567,54 @@ import {
     </div>
   </div>
 </div>
+</div>
+
+<!-- 계정/항목 클릭 시 상세 분개 내역을 보여주는 공통 모달 -->
+<div class="modal-overlay" id="detailModalOverlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="detailModalTitle">상세 내역</h3>
+      <button id="detailModalClose" title="닫기">✕</button>
+    </div>
+    <div class="modal-body" id="detailModalBody"></div>
+  </div>
+</div>
+
+<div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
+<input type="file" id="settlementFileInput" accept=".pdf,image/*" multiple style="display:none;">
+<input type="file" id="revenuePaymentFileInput" accept=".pdf,image/*" multiple style="display:none;">
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL, deleteObject
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+import {
+  getFunctions, httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js";
+
+// ===== 여기를 Firebase 콘솔에서 발급받은 값으로 채워주세요 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyDXD8PlqEGRGPPp6Lts7a26fXXAaPlq2Dg",
+  authDomain: "easyplayfms.firebaseapp.com",
+  projectId: "easyplayfms",
+  storageBucket: "easyplayfms.firebasestorage.app",
+  messagingSenderId: "558327904829",
+  appId: "1:558327904829:web:276a1afcbbf68edad5c854"
+};
+// ============================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 const functionsInstance = getFunctions(app, 'asia-northeast3');
 const extractReceiptDataFn = httpsCallable(functionsInstance, 'extractReceiptData');
 
@@ -661,54 +706,6 @@ async function runAiExtract(scope, btnId){
     btn.textContent = originalText;
   }
 }
-document.getElementById('advisorAiBtn').addEventListener('click', () => runAiExtract('advisor', 'advisorAiBtn'));
-document.getElementById('corpAiBtn').addEventListener('click', () => runAiExtract('corp', 'corpAiBtn'));
-document.getElementById('revenueAiBtn').addEventListener('click', () => runAiExtract('revenue', 'revenueAiBtn'));
-</div>
-
-<!-- 계정/항목 클릭 시 상세 분개 내역을 보여주는 공통 모달 -->
-<div class="modal-overlay" id="detailModalOverlay" style="display:none;">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h3 id="detailModalTitle">상세 내역</h3>
-      <button id="detailModalClose" title="닫기">✕</button>
-    </div>
-    <div class="modal-body" id="detailModalBody"></div>
-  </div>
-</div>
-
-<div class="fab-add"><button class="primary" id="fabAddBtn">+ 새 지출 기록</button></div>
-<input type="file" id="settlementFileInput" accept=".pdf,image/*" multiple style="display:none;">
-<input type="file" id="revenuePaymentFileInput" accept=".pdf,image/*" multiple style="display:none;">
-<div class="toast" id="toast"></div>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import {
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import {
-  getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, updateDoc, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import {
-  getStorage, ref, uploadBytes, getDownloadURL, deleteObject
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
-
-// ===== 여기를 Firebase 콘솔에서 발급받은 값으로 채워주세요 =====
-const firebaseConfig = {
-  apiKey: "AIzaSyDXD8PlqEGRGPPp6Lts7a26fXXAaPlq2Dg",
-  authDomain: "easyplayfms.firebaseapp.com",
-  projectId: "easyplayfms",
-  storageBucket: "easyplayfms.firebasestorage.app",
-  messagingSenderId: "558327904829",
-  appId: "1:558327904829:web:276a1afcbbf68edad5c854"
-};
-// ============================================================
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
 
 let expenses = [];
 let unsub = null;
@@ -2532,6 +2529,9 @@ document.getElementById('bkConfirmAllAutoBtn').addEventListener('click', confirm
 document.getElementById('bkSaveManualBtn').addEventListener('click', addManualBkEntry);
 document.getElementById('cancelBkManualEditBtn').addEventListener('click', cancelBkManualEdit);
 document.getElementById('bkExportCsvBtn').addEventListener('click', exportBkCSV);
+document.getElementById('advisorAiBtn').addEventListener('click', () => runAiExtract('advisor', 'advisorAiBtn'));
+document.getElementById('corpAiBtn').addEventListener('click', () => runAiExtract('corp', 'corpAiBtn'));
+document.getElementById('revenueAiBtn').addEventListener('click', () => runAiExtract('revenue', 'revenueAiBtn'));
 
 onAuthStateChanged(auth, (user) => {
   if(user){
