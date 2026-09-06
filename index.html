@@ -246,23 +246,36 @@
   .compare-new .compare-steps li span{color:var(--ink); font-size:13.5px;}
 
   .process-flow{
-    display:grid; grid-template-columns:repeat(5, 1fr); column-gap:34px; margin-top:24px; position:relative;
+    display:grid; grid-template-columns:repeat(5, 1fr); column-gap:24px; margin-top:32px; position:relative;
   }
   .pstep{
-    padding:0; display:flex; flex-direction:column; gap:14px; position:relative;
+    padding:0; display:flex; flex-direction:column; align-items:center; gap:10px; position:relative; text-align:center;
   }
-  .pstep-num{
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--mint-dark);
-    width:36px; height:36px; border-radius:50%; background:var(--mint-tint);
-    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  .pstep-circle{
+    position:relative; width:76px; height:76px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 24px -8px rgba(20,184,166,0.4);
+    margin-bottom:4px;
   }
-  .pstep:nth-child(even) .pstep-num{color:var(--purple); background:var(--purple-tint);}
-  .pstep-arrow{
-    position:absolute; top:18px; left:100%; width:34px; margin-left:0;
-    transform:translateY(-50%); text-align:center;
-    color:var(--gray); font-size:18px; font-weight:700; line-height:1;
+  .pstep-circle.pc-mint{background:linear-gradient(145deg, #2DD4BF, var(--mint-dark));}
+  .pstep-circle.pc-purple{
+    background:linear-gradient(145deg, #A79BFF, #5B4FD1);
+    box-shadow:0 10px 24px -8px rgba(124,111,240,0.4);
   }
-  .pstep:last-child .pstep-arrow{display:none;}
+  .pstep-num-badge{
+    position:absolute; bottom:-6px; right:-6px;
+    background:#fff; color:var(--ink); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11.5px;
+    width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--bg);
+  }
+  .pstep-dots{
+    width:3px; height:24px;
+    background-image:linear-gradient(#B9C0C7 60%, transparent 0%);
+    background-size:3px 9px; background-repeat:repeat-y;
+    border-radius:2px;
+  }
+  .pstep h4{font-size:15.5px; margin:2px 0 0;}
+  .pstep p{font-size:13px; color:var(--gray); margin:0; line-height:1.55; max-width:210px;}
   .pstep h4{font-size:15px; margin:0; font-weight:700;}
   .pstep p{font-size:13px; color:var(--gray); margin:0; line-height:1.55;}
 
@@ -362,7 +375,7 @@
     .compare{grid-template-columns:1fr;}
     .process-flow{grid-template-columns:1fr; row-gap:28px;}
     .pstep{padding-right:0;}
-    .pstep-arrow{display:none;}
+    .pstep p{max-width:none;}
     .quickstart{grid-template-columns:1fr; padding:36px 26px;}
     .portfolio-grid{grid-template-columns:1fr;}
     .portfolio-card{min-height:280px;}
@@ -467,33 +480,49 @@
       <h2>이렇게 진행합니다</h2>
       <p class="section-desc">말뿐인 기획서 대신, 눈으로 보는 검증을 거쳐 확신을 가지고 계약합니다.</p>
     </div>
-    <div class="process-flow">
+    <div class="process-flow process-flow-circle">
       <div class="pstep">
-        <div class="pstep-num">1</div>
+        <div class="pstep-circle pc-mint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3a1 1 0 0 1 1 1v1.5a7.5 7.5 0 0 1-7.5 7.5H5.5a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1h1a2 2 0 0 0 2-2V6a1 1 0 0 1 1-1z"/><path d="M9 15c3 3 6 6 9 9" opacity="0"/><path d="M14.5 3.5c2.5 0 6 3.5 6 6" /><circle cx="18" cy="18" r="3"/></svg>
+          <span class="pstep-num-badge">01</span>
+        </div>
+        <div class="pstep-dots"></div>
         <h4>언제든 바로 연결</h4>
         <p>채널톡, 전화, 이메일 등 가장 편한 방법으로 즉시 소통합니다.</p>
-        <span class="pstep-arrow">&#8594;</span>
       </div>
       <div class="pstep">
-        <div class="pstep-num">2</div>
+        <div class="pstep-circle pc-purple">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v-1a8 8 0 0 1 16 0v1"/><path d="M4 12a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1v-5z"/><path d="M20 12a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-1v-5z"/><path d="M18 17a4 4 0 0 1-4 4h-1"/></svg>
+          <span class="pstep-num-badge">02</span>
+        </div>
+        <div class="pstep-dots"></div>
         <h4>깊이 있는 경청</h4>
         <p>겪고 있는 페인 포인트와 비즈니스의 본질적인 요구사항을 정확히 파악합니다.</p>
-        <span class="pstep-arrow">&#8594;</span>
       </div>
       <div class="pstep">
-        <div class="pstep-num">3</div>
+        <div class="pstep-circle pc-mint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="pstep-num-badge">03</span>
+        </div>
+        <div class="pstep-dots"></div>
         <h4>눈으로 보는 MVP</h4>
         <p>말뿐인 기획서 대신, 실제 작동하는 샘플 사이트를 빠르게 만들어 보여드립니다.</p>
-        <span class="pstep-arrow">&#8594;</span>
       </div>
       <div class="pstep">
-        <div class="pstep-num">4</div>
+        <div class="pstep-circle pc-purple">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12.5 10.8 15.3 16 9.5"/></svg>
+          <span class="pstep-num-badge">04</span>
+        </div>
+        <div class="pstep-dots"></div>
         <h4>확신 있는 계약</h4>
         <p>검증된 방향대로 계약을 진행하니 실패 확률이 0%에 수렴합니다.</p>
-        <span class="pstep-arrow">&#8594;</span>
       </div>
       <div class="pstep">
-        <div class="pstep-num">5</div>
+        <div class="pstep-circle pc-mint">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+          <span class="pstep-num-badge">05</span>
+        </div>
+        <div class="pstep-dots"></div>
         <h4>동반 성장 파트너</h4>
         <p>안정적인 운영과 유지보수는 물론, 성장에 필요한 기능을 계속 고도화합니다.</p>
       </div>
