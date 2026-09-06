@@ -120,6 +120,7 @@
 
   section{padding:50px 0;}
   .section-head{max-width:600px; margin:0 0 18px;}
+  .no-wrap-desc{white-space:nowrap; max-width:none;}
   .section-label{
     display:flex; align-items:center; gap:9px;
     font-family:'JetBrains Mono',monospace; font-size:14.5px; font-weight:700; color:var(--mint-dark);
@@ -380,6 +381,7 @@
     .portfolio-grid{grid-template-columns:1fr;}
     .portfolio-card{min-height:280px;}
     .partner-grid{grid-template-columns:repeat(2, 1fr);}
+    .no-wrap-desc{white-space:normal;}
     .portfolio-grid-3 .portfolio-card{min-height:260px;}
   }
   @media (max-width: 1000px) and (min-width: 861px){
@@ -451,7 +453,7 @@
     <div class="section-head">
       <p class="section-label">Why Us</p>
       <h2>기존 외주 개발과는 다릅니다</h2>
-      <p class="section-desc">느린 소통, 글로만 된 기획서, 완성 후에야 알게 되는 괴리. 그 답답함을 이렇게 해결합니다.</p>
+      <p class="section-desc no-wrap-desc">느린 소통, 글로만 된 기획서, 완성 후에야 알게 되는 괴리. 그 답답함을 이렇게 해결합니다.</p>
     </div>
     <div class="compare">
       <div class="compare-col compare-old">
@@ -598,7 +600,7 @@
     <div class="section-head">
       <p class="section-label">Services</p>
       <h2>무엇을 도와드리나요</h2>
-      <p class="section-desc">거창한 시스템 도입이 아니라, 지금 당장 사업에 도움이 되는 실질적인 변화를 만듭니다.</p>
+      <p class="section-desc no-wrap-desc">거창한 시스템 도입이 아니라, 지금 당장 사업에 도움이 되는 실질적인 변화를 만듭니다.</p>
     </div>
     <div class="services">
       <div class="card">
