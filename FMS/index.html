@@ -255,7 +255,7 @@
     <div class="grid-form2">
       <div class="field-wrap"><label>카테고리</label>
         <select id="c-category">
-          <option>지급수수료</option><option>통신비</option><option>임차료</option><option>소모품비</option>
+          <option>지급수수료</option><option>외주비</option><option>통신비</option><option>임차료</option><option>소모품비</option>
           <option>여비교통비</option><option>접대비</option><option>광고선전비</option><option>인건비</option>
           <option>세금과공과</option><option>기타</option>
         </select>
@@ -277,6 +277,12 @@
     <div class="grid-form3">
       <div class="field-wrap"><label>거래처</label><input type="text" id="c-partner" list="corpPartnerList" placeholder="예: (주)코스콤" autocomplete="off"><datalist id="corpPartnerList"></datalist></div>
       <div class="field-wrap"><label>비고</label><input type="text" id="c-memo" list="corpMemoList" placeholder="예: 전자세금계산서 발급 인증서, 부가세 매입세액공제 대상" autocomplete="off"><datalist id="corpMemoList"></datalist></div>
+    </div>
+    <div class="field-wrap" style="margin-top:8px;">
+      <label style="display:flex; align-items:center; gap:6px; font-weight:400; cursor:pointer;">
+        <input type="checkbox" id="c-exclude-auto" style="width:16px; height:16px;">
+        자동반영 제외 (회계처리는 수동분개로 별도 처리, 이 기록은 증빙 파일 보관용)
+      </label>
     </div>
     <div class="grid-form3">
       <div class="field-wrap" style="grid-column: 1 / -1;">
@@ -856,7 +862,7 @@ function render(){
         <td data-label="증빙">${escapeHtml(e.proof)}</td>
         <td data-label="파일">${receiptLinkHtml(e)}</td>
         <td data-label="상태">${statusBadgeHtml(e)}</td>
-        <td data-label="비고">${escapeHtml(e.memo || '')}</td>
+        <td data-label="비고">${e.excludeAuto ? '<span style="display:inline-block;background:#F3E8D8;color:#8a5a1f;font-size:10.5px;padding:1px 7px;border-radius:10px;margin-right:5px;">자동반영 제외</span>' : ''}${escapeHtml(e.memo || '')}</td>
         <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
         <td><button class="edit-btn" title="수정" data-id="${e.id}">✎</button><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
@@ -936,7 +942,7 @@ function renderCorp(){
         <td data-label="파일">${receiptLinkHtml(e)}${settlementCellHtml(e)}</td>
         <td data-label="상태">${statusBadgeHtml(e)}</td>
         <td data-label="결제계좌">${escapeHtml(e.account || '')}</td>
-        <td data-label="비고">${escapeHtml(e.memo || '')}</td>
+        <td data-label="비고">${e.excludeAuto ? '<span style="display:inline-block;background:#F3E8D8;color:#8a5a1f;font-size:10.5px;padding:1px 7px;border-radius:10px;margin-right:5px;">자동반영 제외</span>' : ''}${escapeHtml(e.memo || '')}</td>
         <td class="amt" data-label="금액">${fmtWon(e.amount)}</td>
         <td><button class="edit-btn" title="수정" data-id="${e.id}">✎</button><button class="del" title="삭제" data-id="${e.id}">✕</button></td>
       </tr>
@@ -986,6 +992,7 @@ function validateCorpForm(){
     account: document.getElementById('c-account').value,
     partner: document.getElementById('c-partner').value.trim(),
     memo: document.getElementById('c-memo').value.trim(),
+    excludeAuto: document.getElementById('c-exclude-auto').checked,
   };
 }
 let editingCorpId = null;
@@ -1014,6 +1021,7 @@ async function addCorpEntry(){
     } else {
       await addDoc(userCollection(uid), entry);
       ['c-desc','c-amount','c-partner','c-memo'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('c-exclude-auto').checked = false;
       fileInput.value = '';
       showToast('법인경비 기록이 추가되었습니다');
     }
@@ -1036,6 +1044,7 @@ function startEditCorp(id){
   document.getElementById('c-account').value = item.account || '법인통장';
   document.getElementById('c-partner').value = item.partner || '';
   document.getElementById('c-memo').value = item.memo || '';
+  document.getElementById('c-exclude-auto').checked = !!item.excludeAuto;
   document.getElementById('corpAddBtn').textContent = '수정 저장';
   document.getElementById('cancelCorpEditBtn').style.display = '';
   document.getElementById('corpAddBtn').scrollIntoView({behavior:'smooth', block:'center'});
@@ -1045,6 +1054,7 @@ function cancelCorpEdit(){
   document.getElementById('corpAddBtn').textContent = '기록 추가';
   document.getElementById('cancelCorpEditBtn').style.display = 'none';
   ['c-desc','c-amount','c-partner','c-memo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('c-exclude-auto').checked = false;
   document.getElementById('c-receipt').value = '';
 }
 document.getElementById('cancelCorpEditBtn').addEventListener('click', cancelCorpEdit);
@@ -1804,6 +1814,7 @@ const ACCOUNTS = [
   { code: 105, name: "선급금", type: "자산" },
   { code: 106, name: "비품", type: "자산" },
   { code: 107, name: "소프트웨어", type: "자산" },
+  { code: 108, name: "부가세대급금", type: "자산" },
   { code: 201, name: "외상매입금", type: "부채" },
   { code: 202, name: "미지급금", type: "부채" },
   { code: 203, name: "예수금", type: "부채" },
@@ -1833,6 +1844,7 @@ const ACCOUNTS = [
 
 const EXPENSE_CATEGORY_TO_ACCOUNT = {
   "지급수수료": "지급수수료",
+  "외주비": "외주용역비",
   "통신비": "통신비",
   "임차료": "임차료",
   "소모품비": "소모품비",
@@ -1964,7 +1976,7 @@ function loadAutoCandidates() {
   const alreadyLinkedIds = new Set(
     bkEntries.filter(e => e.sourceId && recognitionSources.has(e.source)).map(e => e.sourceId)
   );
-  const corpExpenses = expenses.filter(isCorpExpense);
+  const corpExpenses = expenses.filter(e => isCorpExpense(e) && !e.excludeAuto);
 
   const candidates = [];
   corpExpenses.forEach(doc => {
