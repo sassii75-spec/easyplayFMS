@@ -348,6 +348,15 @@
       </div>
       <div class="field-wrap"><label>입금일 (입금완료 시)</label><input type="date" id="r-paiddate"></div>
     </div>
+    <div class="grid-form2">
+      <div class="field-wrap"><label>수익 인식 구분</label>
+        <select id="r-recog">
+          <option value="revenue">매출 (용역완료·인도분)</option>
+          <option value="advance">선수금 (계약금·선금·중도금)</option>
+        </select>
+      </div>
+      <div class="field-wrap" id="r-advance-wrap"><label>선수금 대체액 (원, 잔금·완료 시 기존 선수금 중 매출로 넘길 공급가액)</label><input type="number" id="r-advance" placeholder="0" min="0" step="1"></div>
+    </div>
     <div class="grid-form3">
       <div class="field-wrap" style="grid-column: 1 / -1;"><label>비고</label><input type="text" id="r-memo" list="revenueMemoList" placeholder="예: 전자세금계산서 발행분" autocomplete="off"><datalist id="revenueMemoList"></datalist></div>
     </div>
@@ -1162,7 +1171,7 @@ function renderRevenue(){
         <td data-label="적요">${escapeHtml(r.desc || '')}</td>
         <td class="amt" data-label="공급가액">${fmtWon(r.supply)}</td>
         <td class="amt" data-label="부가세">${fmtWon(r.vat)}</td>
-        <td data-label="증빙">${escapeHtml(r.proof || '')}</td>
+        <td data-label="증빙">${r.recogType === 'advance' ? '<span style="display:inline-block;background:#EDE9FE;color:#5B4BC4;font-size:10.5px;padding:1px 7px;border-radius:10px;margin-right:5px;">선수금</span>' : ''}${Number(r.advanceTransfer) > 0 ? `<span style="display:inline-block;background:#CCFBF1;color:#0F766E;font-size:10.5px;padding:1px 7px;border-radius:10px;margin-right:5px;">선수금대체 ${fmtWon(r.advanceTransfer)}</span>` : ''}${escapeHtml(r.proof || '')}</td>
         <td data-label="파일">${receiptLinkHtml({receipts:r.receipts})}${revenuePaymentCellHtml(r)}</td>
         <td data-label="입금상태">${revenuePaidBadgeHtml(r)}</td>
         <td data-label="비고">${escapeHtml(r.memo || '')}</td>
@@ -1193,14 +1202,18 @@ function renderRevenue(){
 }
 function renderSummaryRevenue(){
   const filtered = getFilteredRevenue();
-  const totalSupply = filtered.reduce((s,r) => s + Number(r.supply||0), 0);
+  // 매출 인식액 = 매출 구분 공급가액 + 선수금 대체액 (선수금 구분 기록은 매출에서 제외)
+  const recognized = r => r.recogType === 'advance' ? 0 : Number(r.supply||0) + Number(r.advanceTransfer||0);
+  const totalSupply = filtered.reduce((s,r) => s + recognized(r), 0);
   const now = new Date();
   const thisMonth = now.toISOString().slice(0,7);
-  const thisMonthTotal = revenues.filter(r => fmtMonth(r.date) === thisMonth).reduce((s,r) => s + Number(r.supply||0), 0);
+  const thisMonthTotal = revenues.filter(r => fmtMonth(r.date) === thisMonth).reduce((s,r) => s + recognized(r), 0);
+  const advanceBalance = revenues.reduce((s,r) => s + (r.recogType === 'advance' ? Number(r.supply||0) : -Number(r.advanceTransfer||0)), 0);
   const unpaid = revenues.filter(r => !r.paid).reduce((s,r) => s + Number(r.total||0), 0);
   const cards = [
-    {label:'현재 필터 공급가액 합계', val: fmtWon(totalSupply)},
+    {label:'현재 필터 매출 인식액', val: fmtWon(totalSupply)},
     {label:'이번 달 매출(공급가액)', val: fmtWon(thisMonthTotal)},
+    {label:'선수금 잔액(미완료 계약)', val: fmtWon(advanceBalance)},
     {label:'미입금 금액', val: fmtWon(unpaid)},
     {label:'기록 건수', val: filtered.length + '건'},
   ];
@@ -1224,6 +1237,8 @@ function validateRevenueForm(){
     memo: document.getElementById('r-memo').value.trim(),
     paid: paidSelect === 'paid',
     paidDate: paidSelect === 'paid' ? (document.getElementById('r-paiddate').value || date) : '',
+    recogType: document.getElementById('r-recog').value === 'advance' ? 'advance' : 'revenue',
+    advanceTransfer: document.getElementById('r-recog').value === 'advance' ? 0 : (Number(document.getElementById('r-advance').value) || 0),
   };
 }
 async function addRevenueEntry(){
@@ -1250,7 +1265,8 @@ async function addRevenueEntry(){
       cancelRevenueEdit();
     } else {
       await addDoc(revenueCollection(uid), entry);
-      ['r-desc','r-supply','r-vat','r-partner','r-memo','r-paiddate'].forEach(id => document.getElementById(id).value = '');
+      ['r-desc','r-supply','r-vat','r-partner','r-memo','r-paiddate','r-advance'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('r-recog').value = 'revenue'; syncRevenueRecogUI();
       document.getElementById('r-paid').value = '';
       document.getElementById('r-total').value = '';
       fileInput.value = '';
@@ -1277,6 +1293,9 @@ function startEditRevenue(id){
   document.getElementById('r-paid').value = item.paid ? 'paid' : '';
   document.getElementById('r-paiddate').value = item.paidDate || '';
   document.getElementById('r-memo').value = item.memo || '';
+  document.getElementById('r-recog').value = item.recogType === 'advance' ? 'advance' : 'revenue';
+  document.getElementById('r-advance').value = item.advanceTransfer || '';
+  syncRevenueRecogUI();
   document.getElementById('revenueAddBtn').textContent = '수정 저장';
   document.getElementById('cancelRevenueEditBtn').style.display = '';
   document.getElementById('revenueAddBtn').scrollIntoView({behavior:'smooth', block:'center'});
@@ -1285,7 +1304,8 @@ function cancelRevenueEdit(){
   editingRevenueId = null;
   document.getElementById('revenueAddBtn').textContent = '기록 추가';
   document.getElementById('cancelRevenueEditBtn').style.display = 'none';
-  ['r-desc','r-supply','r-vat','r-partner','r-memo','r-paiddate'].forEach(id => document.getElementById(id).value = '');
+  ['r-desc','r-supply','r-vat','r-partner','r-memo','r-paiddate','r-advance'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('r-recog').value = 'revenue'; syncRevenueRecogUI();
   document.getElementById('r-paid').value = '';
   document.getElementById('r-total').value = '';
   document.getElementById('r-receipt').value = '';
@@ -1344,6 +1364,13 @@ document.getElementById('r-vat').addEventListener('input', () => {
   const vat = Number(document.getElementById('r-vat').value) || 0;
   document.getElementById('r-total').value = fmtWon(supply + vat);
 });
+function syncRevenueRecogUI(){
+  const isAdvance = document.getElementById('r-recog').value === 'advance';
+  document.getElementById('r-advance-wrap').style.display = isAdvance ? 'none' : '';
+  if(isAdvance) document.getElementById('r-advance').value = '';
+}
+document.getElementById('r-recog').addEventListener('change', syncRevenueRecogUI);
+syncRevenueRecogUI();
 document.getElementById('revenueAddBtn').addEventListener('click', addRevenueEntry);
 document.getElementById('cancelRevenueEditBtn').addEventListener('click', cancelRevenueEdit);
 document.getElementById('revenueFilterMonth').addEventListener('change', renderRevenue);
@@ -1391,14 +1418,15 @@ document.getElementById('revenuePaymentFileInput').addEventListener('change', as
 });
 
 function mapRevenueToJournal(doc){
-  const note = `[자동반영-매출] ${doc.memo || ''}`.trim();
+  const isAdvance = doc.recogType === 'advance';
+  const note = `[자동반영-${isAdvance ? '선수금' : '매출'}] ${doc.memo || ''}`.trim();
   const entries = [
     {
       date: doc.date,
-      description: doc.desc || `${doc.partner || ''} 매출`,
+      description: doc.desc || `${doc.partner || ''} ${isAdvance ? '선수금' : '매출'}`,
       debitAccount: '미수금',
       debitAmount: Number(doc.supply) || 0,
-      creditAccount: '매출액',
+      creditAccount: isAdvance ? '선수금' : '매출액',
       creditAmount: Number(doc.supply) || 0,
       partner: doc.partner || '',
       docType: doc.proof || '',
@@ -1418,6 +1446,23 @@ function mapRevenueToJournal(doc){
       partner: doc.partner || '',
       docType: doc.proof || '',
       note,
+      source: 'auto-revenue',
+      sourceId: doc.id,
+    });
+  }
+  // 잔금·완료 시: 기존에 받아둔 선수금을 매출로 대체
+  const transfer = isAdvance ? 0 : (Number(doc.advanceTransfer) || 0);
+  if(transfer > 0){
+    entries.push({
+      date: doc.date,
+      description: `${doc.desc || doc.partner || '매출'} - 선수금 매출 대체`,
+      debitAccount: '선수금',
+      debitAmount: transfer,
+      creditAccount: '매출액',
+      creditAmount: transfer,
+      partner: doc.partner || '',
+      docType: doc.proof || '',
+      note: `[자동반영-선수금대체] ${doc.memo || ''}`.trim(),
       source: 'auto-revenue',
       sourceId: doc.id,
     });
