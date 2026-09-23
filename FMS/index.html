@@ -268,7 +268,8 @@
       <div class="field-wrap"><label>결제 계좌</label>
         <select id="c-account">
           <option value="법인통장">법인통장</option>
-          <option value="법인카드">법인카드</option>
+          <option value="법인카드(체크)">법인카드 - 체크카드 (즉시 인출)</option>
+          <option value="법인카드">법인카드 - 신용카드 (추후 청구)</option>
           <option value="대표이사 개인지출(정산대상)">대표이사 개인지출(정산대상)</option>
           <option value="미지급(외상매입금)">미지급 - 추후 법인통장 결제 예정</option>
         </select>
@@ -966,7 +967,7 @@ function renderSummaryCorp(){
   const now = new Date();
   const thisMonth = now.toISOString().slice(0,7);
   const thisMonthTotal = expenses.filter(e => isCorpExpense(e) && fmtMonth(e.date) === thisMonth).reduce((s,e) => s + Number(e.amount||0), 0);
-  const unsettled = expenses.filter(e => isCorpExpense(e) && isSettlableAccount(e.account) && !e.settled).reduce((s,e) => s + Number(e.amount||0), 0);
+  const unsettled = expenses.filter(e => isCorpExpense(e) && isSettlableAccount(e.account) && !e.settled && !e.excludeAuto).reduce((s,e) => s + Number(e.amount||0), 0);
   const cards = [
     {label:'현재 필터 합계', val: fmtWon(total)},
     {label:'이번 달 법인경비', val: fmtWon(thisMonthTotal)},
@@ -1858,6 +1859,7 @@ const EXPENSE_CATEGORY_TO_ACCOUNT = {
 
 const PAYMENT_ACCOUNT_TO_CREDIT = {
   "법인통장": "보통예금",
+  "법인카드(체크)": "보통예금",
   "법인카드": "미지급금",
   "대표이사 개인지출(정산대상)": "미지급금",
   "미지급(외상매입금)": "외상매입금",
