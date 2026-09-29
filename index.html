@@ -237,6 +237,7 @@
   .compare-old .compare-label::before{background:#C7C9C1;}
   .compare-new .compare-label{color:var(--mint-dark);}
   .compare-new .compare-label::before{background:var(--mint);}
+  .quickstart .compare-label::before{background:var(--mint);}
   .compare-steps{display:flex; flex-direction:column; margin:0; padding:0; list-style:none;}
   .compare-steps li{
     position:relative; padding:0 0 22px 26px; font-size:14.5px;
@@ -378,31 +379,85 @@
   .qform-note{font-size:12.5px; color:#7C848F; margin:2px 0 0;}
 
   @media (max-width: 860px){
+    /* ── 공통 리듬: 좌우 20px, 섹션 상하 40px ── */
+    .wrap{padding-left:20px; padding-right:20px;}
+    section{padding-top:40px; padding-bottom:40px;}
+    h2{font-size:28px; margin-bottom:12px; line-height:1.3;}
+    .section-head{margin-bottom:22px;}
+    .section-label{font-size:13px; margin-bottom:10px;}
+    .section-desc{font-size:14.5px; max-width:none;}
+    .no-wrap-desc{white-space:normal;}
 
-    .hero{padding:64px 0 0;}
-    .hero-grid{grid-template-columns:1fr;}
-    .hero-mark{max-width:220px; order:-1; margin-bottom:8px;}
-    .stat-bar{grid-template-columns:repeat(2, 1fr);}
-    .stat-bar .sitem:nth-child(3){border-left:none;}
-    .services{grid-template-columns:1fr;}
-    .products{grid-template-columns:1fr;}
-    .about-inner{grid-template-columns:1fr;}
-    .stat-row{grid-template-columns:repeat(3, 1fr);}
-    .contact{grid-template-columns:1fr; padding:32px 24px;}
+    /* ── 헤더 ── */
+    .nav.wrap{padding:14px 20px !important;}
+    .brand svg{width:26px; height:26px;}
+    .brand-word{font-size:17px;}
+    .brand-word .lab{font-size:10.5px; padding:2px 6px;}
     .nav-links a:not(.nav-cta){display:none;}
-    .wrap{padding:0 20px;}
-    .compare{grid-template-columns:1fr;}
-    .process-flow{grid-template-columns:1fr; row-gap:28px;}
+    .nav-cta{padding:8px 16px; font-size:13px;}
+
+    /* ── 히어로 ── */
+    .hero{padding-top:20px; padding-bottom:0;}
+    .hero-grid{grid-template-columns:1fr; gap:8px;}
+    .hero-mark{max-width:168px; order:-1; margin:0 auto 18px;}
+    .eyebrow{font-size:12.5px; margin-bottom:18px;}
+    h1{font-size:33px; line-height:1.25; margin-bottom:20px;}
+    .lede{font-size:16px; margin-bottom:28px; line-height:1.65;}
+    .cta-row{flex-direction:column; gap:10px;}
+    .cta-row .btn{width:100%; justify-content:center; padding:14px 20px;}
+    .stat-bar{grid-template-columns:repeat(2, 1fr); margin-top:40px;}
+    .stat-bar .sitem{padding:22px 16px;}
+    .stat-bar .sitem b{font-size:22px;}
+    .stat-bar .sitem:nth-child(3){border-left:none;}
+    .stat-bar .sitem:nth-child(n+3){border-top:1px solid var(--line);}
+
+    /* ── Why Us ── */
+    .compare{grid-template-columns:1fr; gap:14px; margin-top:6px;}
+    .compare-col{padding:26px 20px; gap:16px;}
+
+    /* ── Process ── */
+    .process-flow{grid-template-columns:1fr; row-gap:26px; margin-top:12px;}
     .pstep{padding-right:0;}
     .pstep p{max-width:none;}
-    .quickstart{grid-template-columns:1fr; padding:36px 26px;}
-    .portfolio-grid{grid-template-columns:1fr;}
-    .portfolio-card{min-height:280px;}
+
+    /* ── Portfolio (다크 블록) ── */
+    section#products{padding-top:24px; padding-bottom:24px;}
+    .portfolio-dark{padding:40px 0;}
+    .portfolio-h2{font-size:26px;}
+    .portfolio-grid{grid-template-columns:1fr; gap:16px;}
+    .portfolio-card{min-height:250px;}
+    .portfolio-grid-3 .portfolio-card{min-height:250px;}
+    .portfolio-mascot{height:72px; bottom:8px; right:8px;}
+    .portfolio-title{right:88px; left:18px; bottom:18px; font-size:17.5px;}
+    .portfolio-badge{top:16px; left:16px;}
+    .case-highlight{padding:18px 18px; gap:10px; margin-top:16px;}
+
+    /* ── Partners ── */
     .partner-grid{grid-template-columns:repeat(2, 1fr);}
-    .no-wrap-desc{white-space:normal;}
-    .portfolio-grid-3 .portfolio-card{min-height:260px;}
-    .portfolio-mascot{height:76px; bottom:8px; right:8px;}
-    .portfolio-title{right:88px; font-size:19px;}
+    .partner-logo{padding:20px 12px; min-height:84px;}
+
+    /* ── Services ── */
+    .services{grid-template-columns:1fr;}
+    .card{padding:24px 20px;}
+    .products{grid-template-columns:1fr;}
+
+    /* ── About (다크 블록) ── */
+    section#about{padding-top:24px; padding-bottom:24px;}
+    .about{padding:44px 0;}
+    .about .wrap{padding-left:20px !important; padding-right:20px !important;}
+    .stat span{font-size:12px; line-height:1.4; display:block;}
+    .about-inner{grid-template-columns:1fr; gap:24px;}
+    .stat-row{grid-template-columns:repeat(3, 1fr); margin-top:24px;}
+    .stat-row .stat{padding:20px 8px 4px;}
+
+    /* ── 하단 CTA ── */
+    .quickstart{grid-template-columns:1fr; padding:32px 22px; gap:26px; border-radius:20px;}
+    .quickstart h2{font-size:24px;}
+    .contact{grid-template-columns:1fr; padding:28px 20px;}
+
+    /* ── 푸터 ── */
+    footer{padding:22px 0; margin-top:8px;}
+    .footer-row{flex-direction:column; align-items:flex-start; gap:6px;}
   }
   @media (max-width: 1000px) and (min-width: 861px){
     .portfolio-grid-3{grid-template-columns:1fr 1fr;}
