@@ -67,6 +67,42 @@
   .exam-meta b{display:block; font-family:'Space Grotesk',sans-serif; font-size:20px;}
   .exam-meta span{font-size:12.5px; color:var(--gray);}
 
+  /* ── 두 갈래 선택 카드 (실전 vs 미니 체험) ── */
+  .pick-head{text-align:center; padding:20px 0 24px;}
+  .pick-head .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:var(--mint-dark);
+    text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;
+  }
+  .pick-head h1{font-family:'Space Grotesk','Pretendard',sans-serif; font-size:25px; margin:0 0 10px; line-height:1.35;}
+  .pick-head p{color:var(--gray); font-size:14.5px; margin:0;}
+  .pick-grid{display:grid; grid-template-columns:1.15fr 1fr; gap:16px; margin-bottom:8px;}
+  .pick-card{
+    background:#fff; border:1.5px solid var(--line); border-radius:var(--radius);
+    padding:24px 24px; display:flex; flex-direction:column; gap:10px;
+  }
+  .pick-card.main{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .pick-card h3{font-size:19px; margin:4px 0 0;}
+  .pick-card p{font-size:13.5px; line-height:1.6; color:var(--gray); margin:0;}
+  .pick-card.main p{color:#B9C0CA;}
+  .pick-badge{
+    align-self:flex-start; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+    border-radius:999px; padding:4px 11px; background:var(--mint); color:#fff;
+  }
+  .pick-badge.sub{background:var(--mint-tint); color:var(--mint-dark);}
+  .pick-flow{display:flex; flex-wrap:wrap; gap:6px; list-style:none; padding:0; margin:2px 0;}
+  .pick-flow li{
+    font-size:12px; font-weight:700; border-radius:5px; padding:4px 9px;
+    background:var(--mint-tint); color:var(--mint-dark);
+  }
+  .pick-card.main .pick-flow li{background:rgba(255,255,255,0.12); color:#fff;}
+  .pick-flow li + li::before{content:'→ '; opacity:0.6;}
+  .pick-meta{font-size:12.5px !important; color:var(--gray) !important;}
+  .pick-card.main .pick-meta{color:#8E97A3 !important;}
+  .pick-card .btn{align-self:flex-start; margin-top:auto; border:none; cursor:pointer; font-weight:700; font-size:14px; border-radius:999px; padding:11px 20px; text-decoration:none; display:inline-flex; align-items:center; gap:6px;}
+  .pick-card.main .btn{background:var(--mint); color:#fff;}
+  .pick-card:not(.main) .btn{background:#fff; color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--ink);}
+  @media (max-width:560px){ .pick-grid{grid-template-columns:1fr;} .pick-head h1{font-size:21px;} }
+
   /* ── Exam screen ── */
   #exam{display:none;}
   .progress-bar{height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:20px;}
@@ -168,15 +204,30 @@
 <main>
   <div class="wrap">
 
-    <div id="intro" class="intro">
-      <p class="eyebrow">Easy IBT · Live Demo</p>
-      <h1>한국어 능력 모의평가,<br>직접 체험해보세요</h1>
-      <p>어휘·문법 3문항과 읽기 2문항, 총 5문항으로 구성된 미니 모의평가입니다.<br>실제 서비스에서는 듣기·쓰기 영역과 상세 채점 리포트까지 제공됩니다.</p>
-      <button class="start-btn" onclick="startExam()">체험 시작하기 →</button>
-      <div class="exam-meta">
-        <div><b>5</b><span>문항</span></div>
-        <div><b>3분</b><span>제한시간</span></div>
-        <div><b>초급</b><span>난이도</span></div>
+    <div id="intro">
+      <div class="pick-head">
+        <p class="eyebrow">Easy IBT · Live Demo</p>
+        <h1>두 가지 방법 중 하나를 골라<br>체험해 보세요</h1>
+        <p>실제 공인 시험과 같은 전체 흐름을 보려면 한국토픽교육센터 데모를, 짧게 맛보려면 이 페이지의 3분 미니 체험을 고르세요.</p>
+      </div>
+
+      <div class="pick-grid">
+        <div class="pick-card main">
+          <span class="pick-badge">추천 · 실제 시험과 같은 흐름</span>
+          <h3>TOPIK 실전 IBT 데모</h3>
+          <p>한국토픽교육센터 TOPIK 사이트에서, 본인 확인부터 결과 확인까지 실제 공인 IBT 시험과 동일한 순서로 된 데모를 체험하실 수 있어요.</p>
+          <ol class="pick-flow"><li>본인 확인</li><li>장치 확인</li><li>연습</li><li>듣기·읽기</li><li>결과</li></ol>
+          <p class="pick-meta">약 100분 · 공식 문항 특성상 데모 계정이 필요합니다(상담 신청 시 안내)</p>
+          <a class="btn" href="https://topik.easyplay.it.kr" target="_blank" rel="noopener">상담 신청하고 체험하기 ↗</a>
+        </div>
+        <div class="pick-card">
+          <span class="pick-badge sub">바로 해보기 · 3분</span>
+          <h3>5문항 미니 체험</h3>
+          <p>이 페이지 안에서 어휘·문법 3문항과 읽기 2문항을 바로 풀고, 제출하면 채점과 해설을 봅니다. 계정 없이 누구나 할 수 있어요.</p>
+          <ol class="pick-flow"><li>문항 풀기</li><li>답안 제출</li><li>채점·해설</li></ol>
+          <p class="pick-meta">EasyPlay Lab이 체험용으로 새로 제작한 샘플 문항 · 3분 타이머</p>
+          <button class="btn" type="button" onclick="startExam()">미니 체험 시작 ↓</button>
+        </div>
       </div>
     </div>
 
