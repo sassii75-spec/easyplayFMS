@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Easy IBT 체험하기 | EasyPlay Lab</title>
+<meta name="description" content="Easy IBT의 온라인 평가 기능을 직접 체험해보세요. 아래 문항은 모두 체험용으로 새로 만든 샘플 문항이며, 실제 공인 시험 문항이 아닙니다.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --mint:#14B8A6; --mint-dark:#0B6E62; --mint-tint:#E8F8F5;
+    --purple:#7C6FF0; --purple-tint:#F1EFFE;
+    --ink:#1A2027; --gray:#6B7480; --bg:#FAFAF8; --line:#E7E9E4; --radius:14px;
+    --bad:#D1453B; --bad-tint:#FBEAE8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Pretendard','Space Grotesk',-apple-system,'Malgun Gothic',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:0 20px;}
+  a{color:inherit;}
+
+  header{
+    position:sticky; top:0; z-index:10; background:rgba(250,250,248,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; max-width:720px; margin:0 auto;}
+  .brand{display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink);}
+  .brand-word{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px;}
+  .brand-word .lab{
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:10.5px; color:#fff;
+    background:var(--mint); padding:2px 7px; border-radius:5px; margin-left:3px; vertical-align:2px;
+  }
+  .back-link{font-size:13.5px; color:var(--gray); text-decoration:none; display:flex; align-items:center; gap:4px;}
+
+  .notice{
+    margin:22px 20px 0; max-width:680px; margin-left:auto; margin-right:auto;
+    background:var(--purple-tint); border:1px solid #DAD4FB; border-radius:var(--radius);
+    padding:16px 18px; font-size:13.5px; line-height:1.6; color:#4A3FA0;
+  }
+  .notice b{color:#3A2E8B;}
+
+  main{padding:28px 0 80px;}
+
+  .intro{text-align:center; padding:20px 0 8px;}
+  .intro .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; color:var(--mint-dark);
+    text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;
+  }
+  .intro h1{font-family:'Space Grotesk','Pretendard',sans-serif; font-size:28px; margin:0 0 12px; line-height:1.3;}
+  .intro p{color:var(--gray); font-size:15px; line-height:1.7; margin:0 0 28px;}
+  .start-btn{
+    display:inline-flex; align-items:center; gap:8px; background:var(--ink); color:#fff; border:none;
+    padding:15px 28px; border-radius:999px; font-size:15.5px; font-weight:700; cursor:pointer;
+  }
+  .start-btn:hover{background:#333a44;}
+  .exam-meta{
+    display:flex; justify-content:center; gap:28px; margin-top:28px; flex-wrap:wrap;
+  }
+  .exam-meta div{text-align:center;}
+  .exam-meta b{display:block; font-family:'Space Grotesk',sans-serif; font-size:20px;}
+  .exam-meta span{font-size:12.5px; color:var(--gray);}
+
+  /* ── Exam screen ── */
+  #exam{display:none;}
+  .progress-bar{height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-bottom:20px;}
+  .progress-fill{height:100%; background:var(--mint); width:0%; transition:width 0.3s ease;}
+  .exam-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+  .q-count{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--gray);}
+  .timer{
+    font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--mint-dark);
+    background:var(--mint-tint); padding:5px 12px; border-radius:999px;
+  }
+  .q-card{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:26px 24px;
+  }
+  .q-type{
+    display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700;
+    color:var(--purple); background:var(--purple-tint); padding:4px 10px; border-radius:999px; margin-bottom:14px;
+  }
+  .q-passage{
+    background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+    font-size:14.5px; line-height:1.8; margin-bottom:16px; white-space:pre-line;
+  }
+  .q-text{font-size:17px; font-weight:700; line-height:1.55; margin:0 0 20px;}
+  .opts{display:flex; flex-direction:column; gap:10px;}
+  .opt{
+    display:flex; align-items:center; gap:12px; border:1.5px solid var(--line); border-radius:10px;
+    padding:13px 16px; cursor:pointer; font-size:14.5px; transition:border-color .15s, background .15s;
+  }
+  .opt:hover{border-color:#CFE8E4;}
+  .opt.selected{border-color:var(--mint); background:var(--mint-tint); font-weight:700;}
+  .opt .num{
+    width:22px; height:22px; border-radius:50%; border:1.5px solid var(--line); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--gray);
+  }
+  .opt.selected .num{border-color:var(--mint); background:var(--mint); color:#fff;}
+  .exam-nav{display:flex; justify-content:space-between; margin-top:22px; gap:10px;}
+  .nav-btn{
+    border:1.5px solid var(--line); background:#fff; padding:12px 22px; border-radius:999px;
+    font-size:14.5px; font-weight:700; cursor:pointer; color:var(--ink);
+  }
+  .nav-btn:disabled{opacity:0.4; cursor:not-allowed;}
+  .nav-btn.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .nav-btn.primary:hover{background:#333a44;}
+
+  /* ── Result screen ── */
+  #result{display:none; text-align:center;}
+  .score-ring{
+    width:150px; height:150px; border-radius:50%; margin:10px auto 22px;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    background:conic-gradient(var(--mint) calc(var(--pct,0) * 1%), var(--line) 0);
+  }
+  .score-ring-inner{
+    width:118px; height:118px; border-radius:50%; background:#fff;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+  }
+  .score-ring-inner b{font-family:'Space Grotesk',sans-serif; font-size:32px;}
+  .score-ring-inner span{font-size:11.5px; color:var(--gray);}
+  #result h2{font-family:'Space Grotesk','Pretendard',sans-serif; font-size:24px; margin:0 0 8px;}
+  #result p.sub{color:var(--gray); font-size:14.5px; margin:0 0 28px;}
+  .review-list{display:flex; flex-direction:column; gap:10px; text-align:left; margin-bottom:28px;}
+  .review-item{
+    display:flex; gap:12px; align-items:flex-start; border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; font-size:13.5px; background:#fff;
+  }
+  .review-item .mark{
+    flex-shrink:0; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:#fff;
+  }
+  .review-item.ok .mark{background:var(--mint);}
+  .review-item.bad .mark{background:var(--bad);}
+  .review-item .body b{display:block; margin-bottom:3px;}
+  .review-item .body .ans{color:var(--gray); font-size:12.5px;}
+  .result-actions{display:flex; justify-content:center; gap:10px; flex-wrap:wrap;}
+
+  footer{text-align:center; padding:30px 20px; color:var(--gray); font-size:12.5px;}
+  footer a{color:var(--mint-dark); text-decoration:none; font-weight:700;}
+
+  @media (max-width:520px){
+    .intro h1{font-size:23px;}
+    .q-text{font-size:15.5px;}
+    .exam-meta{gap:18px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="/">
+      <span class="brand-word">EasyPlay<span class="lab">LAB</span></span>
+    </a>
+    <a class="back-link" href="/#products">← 홈페이지로</a>
+  </div>
+</header>
+
+<div class="notice">
+  <b>안내</b> · 이 페이지는 Easy IBT의 온라인 평가 기능을 체험해볼 수 있도록 만든 데모입니다. 아래 문항은 EasyPlay Lab이 체험용으로 새로 제작한 <b>샘플 문항</b>이며, 공인 시험의 실제 기출 문항이 아닙니다.
+</div>
+
+<main>
+  <div class="wrap">
+
+    <div id="intro" class="intro">
+      <p class="eyebrow">Easy IBT · Live Demo</p>
+      <h1>한국어 능력 모의평가,<br>직접 체험해보세요</h1>
+      <p>어휘·문법 3문항과 읽기 2문항, 총 5문항으로 구성된 미니 모의평가입니다.<br>실제 서비스에서는 듣기·쓰기 영역과 상세 채점 리포트까지 제공됩니다.</p>
+      <button class="start-btn" onclick="startExam()">체험 시작하기 →</button>
+      <div class="exam-meta">
+        <div><b>5</b><span>문항</span></div>
+        <div><b>3분</b><span>제한시간</span></div>
+        <div><b>초급</b><span>난이도</span></div>
+      </div>
+    </div>
+
+    <div id="exam">
+      <div class="exam-top">
+        <span class="q-count" id="qCount">1 / 5</span>
+        <span class="timer" id="timer">03:00</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="q-card" id="qCard"></div>
+      <div class="exam-nav">
+        <button class="nav-btn" id="prevBtn" onclick="prevQ()">이전</button>
+        <button class="nav-btn primary" id="nextBtn" onclick="nextQ()">다음</button>
+      </div>
+    </div>
+
+    <div id="result">
+      <div class="score-ring" id="scoreRing">
+        <div class="score-ring-inner">
+          <b id="scoreNum">0</b>
+          <span>/ 5문항</span>
+        </div>
+      </div>
+      <h2 id="resultTitle">수고하셨습니다!</h2>
+      <p class="sub">문항별 정답과 해설을 확인해보세요.</p>
+      <div class="review-list" id="reviewList"></div>
+      <div class="result-actions">
+        <button class="nav-btn" onclick="restartExam()">다시 풀어보기</button>
+        <a class="nav-btn primary" href="/#products" style="text-decoration:none; display:inline-flex; align-items:center;">Easy IBT 더 알아보기</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  본 체험페이지의 모든 문항은 EasyPlay Lab이 직접 제작한 샘플 문항입니다 · 저작권 ⓒ <a href="/">EasyPlay Lab</a>
+</footer>
+
+<script>
+// 모든 문항은 체험용으로 새로 제작한 샘플 문항입니다. 공인 시험의 실제 문항이 아닙니다.
+const QUESTIONS = [
+  {
+    type: "어휘",
+    text: "다음 빈칸에 들어갈 가장 알맞은 말을 고르십시오.\n\n날씨가 추워서 두꺼운 ( )을/를 입었습니다.",
+    options: ["모자", "외투", "양말", "신발"],
+    answer: 1,
+    explain: "'두껍다'와 어울려 추위를 막기 위해 입는 겉옷은 '외투'입니다."
+  },
+  {
+    type: "문법",
+    text: "다음 빈칸에 들어갈 가장 알맞은 것을 고르십시오.\n\n저는 매일 아침 운동을 ( ) 회사에 갑니다.",
+    options: ["하지만", "한 후에", "하거나", "하는데"],
+    answer: 1,
+    explain: "'A를 한 후에 B를 하다'는 A를 먼저 끝내고 이어서 B를 한다는 뜻의 표현입니다."
+  },
+  {
+    type: "문법",
+    text: "다음 밑줄 친 부분과 의미가 가장 비슷한 것을 고르십시오.\n\n비가 올 것 같아서 우산을 챙겼습니다.",
+    options: ["비가 왔기 때문에", "비가 올 듯해서", "비가 오더라도", "비가 온 덕분에"],
+    answer: 1,
+    explain: "'-(으)ㄹ 것 같다'는 추측을 나타내는 표현으로 '-(으)ㄹ 듯하다'와 의미가 비슷합니다."
+  },
+  {
+    type: "읽기",
+    passage: "저는 주말마다 집 근처 공원에서 자전거를 탑니다. 혼자 탈 때도 있지만, 친구와 같이 탈 때가 더 많습니다. 운동도 되고 기분도 좋아져서 자전거 타는 시간을 좋아합니다.",
+    text: "윗글의 내용과 같은 것을 고르십시오.",
+    options: [
+      "이 사람은 주말마다 혼자만 자전거를 탄다.",
+      "이 사람은 공원에서 자전거를 탄다.",
+      "이 사람은 자전거 타는 것을 싫어한다.",
+      "이 사람은 평일에만 자전거를 탄다."
+    ],
+    answer: 1,
+    explain: "글에서 '집 근처 공원에서 자전거를 탑니다'라고 했으므로 정답은 2번입니다."
+  },
+  {
+    type: "읽기",
+    passage: "민수: 수진 씨, 내일 시간 있어요? 같이 영화 볼래요?\n수진: 미안해요, 내일은 약속이 있어서 안 될 것 같아요. 다음 주는 어때요?\n민수: 좋아요. 그럼 다음 주에 봐요.",
+    text: "두 사람은 언제 영화를 보기로 했습니까?",
+    options: ["오늘", "내일", "다음 주", "다음 달"],
+    answer: 2,
+    explain: "수진 씨가 내일은 약속이 있다고 하자 민수 씨가 '다음 주에 봐요'라고 제안했습니다."
+  }
+];
+
+let current = 0;
+let selected = new Array(QUESTIONS.length).fill(null);
+let timeLeft = 180;
+let timerInterval = null;
+
+function startExam(){
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('exam').style.display = 'block';
+  current = 0;
+  selected = new Array(QUESTIONS.length).fill(null);
+  timeLeft = 180;
+  renderQ();
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0){
+      clearInterval(timerInterval);
+      finishExam();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(){
+  const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+  const s = (timeLeft % 60).toString().padStart(2,'0');
+  document.getElementById('timer').textContent = m + ':' + s;
+}
+
+function renderQ(){
+  const q = QUESTIONS[current];
+  document.getElementById('qCount').textContent = (current+1) + ' / ' + QUESTIONS.length;
+  document.getElementById('progressFill').style.width = ((current) / QUESTIONS.length * 100) + '%';
+
+  let html = '<span class="q-type">' + q.type + '</span>';
+  if (q.passage){
+    html += '<div class="q-passage">' + q.passage.replace(/\n/g,'<br>') + '</div>';
+  }
+  html += '<p class="q-text">' + q.text.replace(/\n/g,'<br>') + '</p>';
+  html += '<div class="opts">';
+  q.options.forEach((opt, i) => {
+    const sel = selected[current] === i ? ' selected' : '';
+    html += '<div class="opt' + sel + '" onclick="selectOpt(' + i + ')"><span class="num">' + (i+1) + '</span>' + opt + '</div>';
+  });
+  html += '</div>';
+  document.getElementById('qCard').innerHTML = html;
+
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').textContent = current === QUESTIONS.length - 1 ? '제출하기' : '다음';
+}
+
+function selectOpt(i){
+  selected[current] = i;
+  renderQ();
+}
+
+function prevQ(){
+  if (current > 0){ current--; renderQ(); }
+}
+
+function nextQ(){
+  if (current < QUESTIONS.length - 1){
+    current++;
+    renderQ();
+  } else {
+    finishExam();
+  }
+}
+
+function finishExam(){
+  clearInterval(timerInterval);
+  document.getElementById('exam').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+
+  let correct = 0;
+  let html = '';
+  QUESTIONS.forEach((q, i) => {
+    const isCorrect = selected[i] === q.answer;
+    if (isCorrect) correct++;
+    html += '<div class="review-item ' + (isCorrect ? 'ok' : 'bad') + '">';
+    html += '<span class="mark">' + (isCorrect ? '✓' : '✕') + '</span>';
+    html += '<div class="body"><b>Q' + (i+1) + '. ' + q.type + '</b>';
+    html += '<span class="ans">정답: ' + q.options[q.answer] + (selected[i] !== null && !isCorrect ? ' · 선택: ' + q.options[selected[i]] : (selected[i] === null ? ' · 선택 안 함' : '')) + '</span>';
+    html += '<div style="margin-top:6px; color:#6B7480;">' + q.explain + '</div>';
+    html += '</div></div>';
+  });
+  document.getElementById('reviewList').innerHTML = html;
+  document.getElementById('scoreNum').textContent = correct;
+  document.getElementById('scoreRing').style.setProperty('--pct', (correct / QUESTIONS.length * 100));
+
+  const titles = ['다음에 다시 도전해보세요!','조금 더 연습해볼까요?','잘 하셨어요!','훌륭해요!','만점이에요! 대단해요 🎉'];
+  document.getElementById('resultTitle').textContent = titles[correct];
+}
+
+function restartExam(){
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('intro').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
